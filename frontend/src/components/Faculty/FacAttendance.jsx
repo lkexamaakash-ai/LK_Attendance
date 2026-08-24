@@ -110,13 +110,10 @@ const FacAttendance = () => {
               penaltyAmount:
                 Number(lec?.faculty?.lectureRate - att?.payout) || 0,
 
-              // Use actual lecture date/time for sorting
-              sortTime: att.actualStartTime || att.date || lec.StartDate,
+              sortTime: att.date,
             };
           }),
         )
-
-        // Latest first
         .sort((a, b) => new Date(b.sortTime) - new Date(a.sortTime))
     );
   };
@@ -170,9 +167,7 @@ const FacAttendance = () => {
 
   useEffect(() => {
     if (typ === "LECTURE_BASED") {
-      console.log(serverdata);
       const uiData = mapLecturesToUI(serverdata);
-      console.log(uiData);
       setMyLecturesData(uiData);
     } else {
       setLecData(serverdata);
