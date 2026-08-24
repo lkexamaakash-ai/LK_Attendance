@@ -383,7 +383,7 @@ const FacAttendance = () => {
 
                   {/* ACTUAL TIME */}
 
-                  <li>{item.actualTime}</li>
+                  <li>{item.status === "Conducted" ? item.actualTime : "-"}</li>
 
                   {/* STATUS */}
 
