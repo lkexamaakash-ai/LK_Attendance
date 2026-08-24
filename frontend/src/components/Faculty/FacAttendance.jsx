@@ -72,20 +72,10 @@ const FacAttendance = () => {
         // Flatten lecture -> attendance
         .flatMap((lec) =>
           lec.attendance.map((att) => {
-            let status = "Planned";
-
-            if (
-              att.status === "CONDUCTED" ||
-              (att.actualStartTime && att.actualEndTime)
-            ) {
-              status = "Conducted";
-            } else if (att.status === "CANCELLED") {
-              status = "Cancelled";
-            } else if (att.status === "MISSED") {
-              status = "Missed";
-            } else if (new Date(lec.endTime) < new Date()) {
-              status = "Missed";
-            }
+            let status = att?.status;
+            if (status === "CONDUCTED") status = "Conducted";
+            else if (status === "MISSED") status = "Missed";
+            else status = "Cancelled";
 
             return {
               date: formatDate(att.date || lec.StartDate),
@@ -95,7 +85,7 @@ const FacAttendance = () => {
               plannedTime: `${formatTime(
                 lec.startTime,
               )} – ${formatTime(lec.endTime)}`,
-
+              comment: att.comment,
               actualTime:
                 att.actualStartTime && att.actualEndTime
                   ? `${formatTime(att.actualStartTime)} – ${formatTime(
@@ -104,7 +94,6 @@ const FacAttendance = () => {
                   : "-",
 
               status,
-
               penalty: att.penalty || "NONE",
               penaltyMin: Number(att.penaltyMin) || 0,
               penaltyAmount:
@@ -168,7 +157,7 @@ const FacAttendance = () => {
   useEffect(() => {
     if (typ === "LECTURE_BASED") {
       const uiData = mapLecturesToUI(serverdata);
-      console.log(uiData)
+      console.log(uiData);
       setMyLecturesData(uiData);
     } else {
       setLecData(serverdata);
