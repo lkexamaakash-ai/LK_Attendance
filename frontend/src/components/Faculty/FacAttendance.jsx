@@ -106,6 +106,9 @@ const FacAttendance = () => {
               status,
 
               penalty: att.penalty || "NONE",
+              penaltyMin: Number(att.penaltyMin) || 0,
+              penaltyAmount:
+                Number(lec?.faculty?.lectureRate - att?.payout) || 0,
 
               // Use actual lecture date/time for sorting
               sortTime: att.actualStartTime || att.date || lec.StartDate,
@@ -125,6 +128,7 @@ const FacAttendance = () => {
     "Actual Time",
     "Status",
     "Penalty",
+    "Penalty Amount",
   ];
 
   const lecHeader = ["Date", "Planned Time", "InTime", "OutTime", "Status"];
@@ -166,8 +170,9 @@ const FacAttendance = () => {
 
   useEffect(() => {
     if (typ === "LECTURE_BASED") {
+      console.log(serverdata);
       const uiData = mapLecturesToUI(serverdata);
-
+      console.log(uiData);
       setMyLecturesData(uiData);
     } else {
       setLecData(serverdata);
@@ -366,9 +371,7 @@ const FacAttendance = () => {
         <div className="w-[98%] h-full items-center overflow-auto xl:overflow-x-hidden">
           {/* HEADER */}
 
-          <ul
-            className={`grid grid-cols-[120px_180px_220px_220px_150px_150px] sticky top-0 xl:grid-cols-6 text-center border-b p-3 font-semibold bg-gray-50`}
-          >
+          <ul className="grid grid-cols-[120px_180px_220px_220px_150px_150px_170px] sticky top-0 xl:grid-cols-7 text-center border-b p-3 font-semibold bg-gray-50">
             {typ === "LECTURE_BASED"
               ? myLectureHeaders.map((item, i) => <li key={i}>{item}</li>)
               : lecHeader.map((item, i) => <li key={i}>{item}</li>)}
@@ -379,7 +382,7 @@ const FacAttendance = () => {
               filteredAttendance.map((item, i) => (
                 <ul
                   key={`${item.sortTime}-${i}`}
-                  className="grid grid-cols-[120px_180px_220px_220px_150px_150px] xl:grid-cols-6 text-center border-b p-3 items-center hover:bg-gray-50"
+                  className="grid grid-cols-[120px_180px_220px_220px_150px_150px_170px] xl:grid-cols-7 text-center border-b p-3 items-center hover:bg-gray-50"
                 >
                   {/* DATE */}
 
@@ -412,6 +415,11 @@ const FacAttendance = () => {
                   {/* PENALTY */}
 
                   <li>{item.penalty === "NONE" ? "None" : item.penalty}</li>
+                  <li>
+                    {item.penalty === "NONE"
+                      ? "₹0"
+                      : `₹${item.penaltyAmount || 0}`}
+                  </li>
                 </ul>
               ))
             ) : (

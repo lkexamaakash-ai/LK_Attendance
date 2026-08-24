@@ -100,6 +100,14 @@ const getLectureByIdAndType = async (id, type, month, year) => {
             course: true,
           },
         },
+        faculty: {
+          select: {
+            id: true,
+            name: true,
+            lectureRate: true,
+            facultyType: true,
+          },
+        },
       },
     });
   } else {

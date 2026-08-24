@@ -27,6 +27,8 @@ const FacLecture = () => {
   ];
 
   const { fetchLecture, fetchSubject } = useManagement();
+  const [selectedCourse, setSelectedCourse] = useState("ALL");
+  const [selectedBranch, setSelectedBranch] = useState("ALL");
 
   const formatTime = (isoTime) => {
     if (!isoTime) return "";
@@ -104,28 +106,101 @@ const FacLecture = () => {
     return Math.min(Math.round((completed / total) * 100), 100);
   };
 
+  const courses = [
+    ...new Set(
+      myLecturesData.map((item) => item.batch?.course?.name).filter(Boolean),
+    ),
+  ];
+
+  const branches = [
+    ...new Set(
+      myLecturesData
+        .filter((item) => {
+          if (selectedCourse === "ALL") return true;
+
+          return item.batch?.course?.name === selectedCourse;
+        })
+        .map((item) => item.batch?.course?.branch?.name)
+        .filter(Boolean),
+    ),
+  ];
+
+  const filteredLectures = myLecturesData.filter((item) => {
+    const courseName = item.batch?.course?.name;
+    const branchName = item.batch?.course?.branch?.name;
+
+    if (selectedCourse !== "ALL" && courseName !== selectedCourse) {
+      return false;
+    }
+
+    if (selectedBranch !== "ALL" && branchName !== selectedBranch) {
+      return false;
+    }
+
+    return true;
+  });
+
   return (
     <>
       <div className="h-full bg-white m-2 rounded flex flex-col overflow-auto items-center">
         {/* filter */}
-        {/* <div className="w-[98%] flex p-2 items-center justify-center gap-2 border-b-[1] mx-2">
-          <h1 className="text-lg uppercase font-semibold">Filter:</h1>
-          <Select>
-            <SelectTrigger className={`w-[30%]`}>
-              <SelectValue placeholder={`Subject`} />
-            </SelectTrigger>
-            <SelectContent>
-              {myLecturesData.map((item, i) => (
-                <SelectItem key={i} value={item.subject.id}>
-                  {item.subject.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="w-[98%] flex items-center justify-between p-3 border-b">
+          {/* LEFT - Course & Branch */}
+          <div className="flex items-center gap-3">
+            {/* Course */}
+            <Select
+              value={selectedCourse}
+              onValueChange={(value) => {
+                setSelectedCourse(value);
 
-          <Input type={`date`} className={`w-[30%]`} />
-          <Button>Apply</Button>
-        </div> */}
+                // Course change hone par branch reset
+                setSelectedBranch("ALL");
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Course" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="ALL">All Courses</SelectItem>
+
+                {courses.map((course) => (
+                  <SelectItem key={course} value={course}>
+                    {course}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Branch */}
+            <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Branch" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="ALL">All Branches</SelectItem>
+
+                {branches.map((branch) => (
+                  <SelectItem key={branch} value={branch}>
+                    {branch}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* RESET */}
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSelectedCourse("ALL");
+              setSelectedBranch("ALL");
+            }}
+          >
+            Reset
+          </Button>
+        </div>
 
         {/* Lecture List */}
         <div className="w-[98%] h-full overflow-y-auto xl:overflow-x-hidden">
@@ -135,7 +210,7 @@ const FacLecture = () => {
             ))}
           </ul>
 
-          {myLecturesData.map((item, i) => (
+          {filteredLectures.map((item, i) => (
             <ul
               key={i}
               className="grid grid-cols-[80px_180px_180px_180px_180px_140px_140px_140px_180px] xl:grid-cols-9 text-center border-b p-3 items-center"
