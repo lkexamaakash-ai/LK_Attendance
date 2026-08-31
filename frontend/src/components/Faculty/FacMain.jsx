@@ -4,6 +4,10 @@ import React, { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import Image from "next/image";
 import { mainRoute } from "../apiroute";
+import SalaryBasedFacultyDonut from "../chart/SalaryBasedFacultyDonut";
+import FacultyAttendanceBar from "../chart/FacultyAttendanceBar";
+import FacultyLectureStatusDonut from "../chart/FacultyLectureStatusDonut";
+import FacultyPenaltyDonut from "../chart/FacultyPenaltyDonut";
 
 const FacMain = () => {
   const lecturehistory = [
@@ -42,9 +46,11 @@ const FacMain = () => {
   const [lecture, setLecture] = useState([]);
   const [attendances, setAttendance] = useState([]);
   const [penalty, setPenalty] = useState({});
+  const [user, setUser] = useState({});
 
   useEffect(() => {
     let tokn = JSON.parse(localStorage.getItem("user"));
+    setUser(tokn.data?.user);
     let token = tokn.data.token;
     let userId = tokn.data.user.id;
     let branchId = tokn.data.user.branch?.id;
@@ -62,10 +68,7 @@ const FacMain = () => {
       );
       const facultyData = data.data.faculty;
 
-      const lectur = data.data.lectures;
-
       setFaculty(facultyData[0]);
-      setLecture(lectur);
     };
 
     loadData();
@@ -103,7 +106,6 @@ const FacMain = () => {
     );
 
     setPenalty(penaltyCount);
-    console.log(last5AttendedLectures);
     setAttendance(last5AttendedLectures);
   }, [lecture]);
 
@@ -111,6 +113,50 @@ const FacMain = () => {
 
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
+
+  const [chartData, setChartData] = useState({});
+
+  useEffect(() => {
+    let user = JSON.parse(localStorage.getItem("user"));
+
+    let token = user.data.token;
+    let userId = user.data?.user?.id;
+    let facultyType = user.data?.user?.type;
+
+    if (!userId) return;
+    const facultyData = async () => {
+      console.log("Inside function")
+      if (facultyType === "LECTURE_BASED") {
+        console.log("inSide if else")
+        const { data } = await axios.get(
+          `${mainRoute}/api/attendance/faculty/${userId}/monthly-summary?month=${currentMonth + 1}&year=${currentYear}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        setChartData(data.data);
+      } else {
+        const { data } = await axios.get(
+          `${mainRoute}/api/attendance/faculty/salary-summary/${
+            userId
+          }?month=${currentMonth + 1}&year=${currentYear}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${tok}`,
+            },
+          },
+        );
+        setChartData(data.data);
+      }
+    };
+
+    facultyData();
+  }, []);
 
   const totalScheduledThisMonth = lecture.reduce(
     (count, lec) => count + (lec.TotalScheduled || 0),
@@ -279,7 +325,7 @@ const FacMain = () => {
             </div> */}
 
             <div className="xl:w-full h-[50vh] bg-gray-100 rounded m-1 shadow-lg overflow-hidden p-2">
-              <h1 className="text-xl font-semibold">
+              {/* <h1 className="text-xl font-semibold">
                 Lecture History (Last 5 Lectures)
               </h1>
               <div
@@ -320,7 +366,39 @@ const FacMain = () => {
                     </ul>
                   );
                 })}
-              </div>
+              </div> */}
+
+              {user?.type === "LECTURE_BASED" ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FacultyLectureStatusDonut data={chartData} />
+                    <FacultyPenaltyDonut data={chartData} />
+                  </div>
+                  <h3 className="text-xl font-semibold mt-4 text-green-600">
+                    Total Payout: ₹{chartData.totalPayout}
+                  </h3>
+                </>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <SalaryBasedFacultyDonut data={chartData} />
+                    <FacultyAttendanceBar data={chartData} />
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                    <p>Per Day Salary: ₹{chartData?.perDaySalary}</p>
+                    <p>
+                      Avg Daily Minutes:{" "}
+                      {chartData.attendanceSummary?.averageDailyMinutes} mins
+                    </p>
+                    <p>
+                      Total Working Minutes:{" "}
+                      {chartData.attendanceSummary?.totalWorkingMinutes}
+                    </p>
+                    <p>Total Days: {chartData?.totalDays}</p>
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <div className="w-[98%] ml-1 p-2 rounded border bg-gray-100 [&>h1]:text-xl flex [&>h1]:px-2 [&>h1]:border-r-2 [&>h1]:border-gray-300  ">

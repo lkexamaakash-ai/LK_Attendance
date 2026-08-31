@@ -74,7 +74,7 @@ const FacAttendance = () => {
           lec.attendance.map((att) => {
             let status = att?.status;
             if (status === "CONDUCTED") status = "Conducted";
-            else if (status === "MISSED") status = "Missed";
+            else if (status === "MISSED") status = "Pre-Cancelled";
             else status = "Cancelled";
 
             return {
@@ -195,7 +195,7 @@ const FacAttendance = () => {
       case "Cancelled":
         return "bg-red-100 text-red-700";
 
-      case "Missed":
+      case "Pre-Cancelled":
         return "bg-red-100 text-red-700";
 
       case "Planned":
@@ -320,7 +320,7 @@ const FacAttendance = () => {
               <SelectContent>
                 <SelectItem value="ALL">All Status</SelectItem>
                 <SelectItem value="Conducted">Conducted</SelectItem>
-                <SelectItem value="Missed">Missed</SelectItem>
+                <SelectItem value="Pre-Cancelled">Pre-Cancelled</SelectItem>
                 <SelectItem value="Cancelled">Cancelled</SelectItem>
                 <SelectItem value="Planned">Planned</SelectItem>
               </SelectContent>

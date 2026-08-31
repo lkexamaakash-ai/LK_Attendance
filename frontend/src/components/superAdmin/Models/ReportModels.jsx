@@ -51,7 +51,6 @@ const ReportModels = ({ open, setOpen, user, setUser }) => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
-    console.log(user);
     if (!user?.id) return;
     let tok = JSON.parse(localStorage.getItem("user")).data.token;
     let facultyRole = user?.role;
@@ -68,7 +67,6 @@ const ReportModels = ({ open, setOpen, user, setUser }) => {
             },
           },
         );
-        console.log(data.data);
         setChartData(data.data);
       } else if (facultyRole === "FACULTY") {
         if (user?.facultyType === "LECTURE_BASED") {
@@ -83,7 +81,6 @@ const ReportModels = ({ open, setOpen, user, setUser }) => {
               },
             },
           );
-          console.log("Lecture based banda:=>", data.data);
           setChartData(data.data);
         } else {
           const { data } = await axios.get(
@@ -97,7 +94,6 @@ const ReportModels = ({ open, setOpen, user, setUser }) => {
               },
             },
           );
-          console.log("Salary based banda:=>", data.data);
           setChartData(data.data);
         }
       }
