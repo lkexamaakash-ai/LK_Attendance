@@ -33,7 +33,6 @@ const StaffProfile = () => {
 
   const handleChange = async () => {
     const data = await changePassword(users.id, newPass, oldPass);
-    console.log(data);
     if (data.data === "wrong pass") {
       alert("Something went wrong");
     } else {

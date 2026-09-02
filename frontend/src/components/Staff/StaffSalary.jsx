@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { Label } from "../ui/label";
 import {
@@ -27,7 +28,7 @@ const StaffSalary = () => {
     "Dec",
   ];
 
-  let cYear = new Date().getFullYear();
+  const cYear = new Date().getFullYear();
 
   const years = Array.from(
     {
@@ -66,76 +67,217 @@ const StaffSalary = () => {
       year: "numeric",
     });
 
+  /*
+   * Calculate penalty minutes
+   *
+   * Logic:
+   * required working minutes = scheduledOut - scheduledIn
+   * actual working minutes   = actualOut - actualIn
+   * shortfall                = required - actual
+   *
+   * If shortfall > 15 minutes,
+   * shortfall will be considered penalty minutes.
+   */
+  // function calculatePenaltyMinutes({
+  //   scheduledIn,
+  //   scheduledOut,
+  //   actualIn,
+  //   actualOut,
+  // }) {
+  //   const GRACE_MINUTES = 15;
+
+  //   if (!scheduledIn || !scheduledOut || !actualIn || !actualOut) {
+  //     return 0;
+  //   }
+
+  //   const scheduledStart = new Date(scheduledIn);
+  //   const scheduledEnd = new Date(scheduledOut);
+
+  //   const actualStart = new Date(actualIn);
+  //   const actualEnd = new Date(actualOut);
+
+  //   const workingMinutesPerDay = Math.floor(
+  //     (scheduledEnd - scheduledStart) / (1000 * 60),
+  //   );
+
+  //   const actualWorkedMinutes = Math.floor(
+  //     (actualEnd - actualStart) / (1000 * 60),
+  //   );
+
+  //   if (workingMinutesPerDay <= 0 || actualWorkedMinutes < 0) {
+  //     return 0;
+  //   }
+
+  //   const shortfallMinutes = Math.max(
+  //     0,
+  //     workingMinutesPerDay - actualWorkedMinutes,
+  //   );
+
+  //   return shortfallMinutes > GRACE_MINUTES ? shortfallMinutes : 0;
+  // }
+
+  function calculateLateMinutes({ scheduledIn, actualIn }) {
+    const GRACE_MINUTES = 15;
+
+    if (!scheduledIn || !actualIn) {
+      return 0;
+    }
+
+    const lateMinutes = Math.floor(
+      (new Date(actualIn) - new Date(scheduledIn)) / (1000 * 60),
+    );
+
+    return lateMinutes > GRACE_MINUTES ? lateMinutes : 0;
+  }
+
+  function calculatePenaltyMinutes({
+    workingMinutesPerDay,
+    actualIn,
+    actualOut,
+  }) {
+    const GRACE_MINUTES = 15;
+
+    if (!workingMinutesPerDay || !actualIn || !actualOut) {
+      return 0;
+    }
+
+    const actualInTime = new Date(actualIn);
+    const actualOutTime = new Date(actualOut);
+
+    if (isNaN(actualInTime.getTime()) || isNaN(actualOutTime.getTime())) {
+      return 0;
+    }
+
+    const actualWorkedMinutes = Math.floor(
+      (actualOutTime - actualInTime) / (1000 * 60),
+    );
+
+    const shortfallMinutes = Math.max(
+      0,
+      workingMinutesPerDay - actualWorkedMinutes,
+    );
+
+    return shortfallMinutes > GRACE_MINUTES ? shortfallMinutes : 0;
+  }
+
   const [staffData, setStaffData] = useState({});
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+
   const [selectYear, setSelectedYear] = useState(new Date().getFullYear());
+
   const [salaryTableData, setSalaryTableData] = useState([]);
 
+  // Load staff data
   useEffect(() => {
-    console.log(selectedMonth);
-    let tokn = JSON.parse(localStorage.getItem("user"));
-    let token = tokn.data.token;
-    // setBranch(tokn.data.user.branch);
+    const tokn = JSON.parse(localStorage.getItem("user"));
+
+    if (!tokn?.data?.token || !tokn?.data?.user?.id) {
+      console.error("User/token not found");
+      return;
+    }
+
+    const token = tokn.data.token;
 
     const loadData = async () => {
-      const { data } = await axios.get(
-        `${mainRoute}/api/users/role/dash?userId=${tokn.data.user.id}&branchId=${tokn.data.user.branch.id}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+      try {
+        const { data } = await axios.get(
+          `${mainRoute}/api/users/role/dash?userId=${tokn.data.user.id}&branchId=${tokn.data.user.branch.id}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
           },
-        },
-      );
-      const facultyData = data.data.faculty;
-      console.log(facultyData);
+        );
 
-      setStaffData(facultyData[0]);
+        const facultyData = data?.data?.faculty;
+
+
+        setStaffData(facultyData || {});
+      } catch (error) {
+        console.error(
+          "Failed to load staff data:",
+          error.response?.data || error.message,
+        );
+      }
     };
 
     loadData();
   }, []);
 
+  // Prepare salary table
   useEffect(() => {
-    console.log(staffData.staffAttendances);
     const monthAttendances =
       staffData?.staffAttendances?.filter((att) => {
         const d = new Date(att.date);
+
         return d.getMonth() === selectedMonth && d.getFullYear() === selectYear;
       }) || [];
 
-    console.log(monthAttendances);
-    const salaryTableData = monthAttendances.map((att) => ({
-      date: formatDate(att.date),
-      inTime: formatTime(att.actualInTime),
-      outTime: att.actualOutTime ? formatTime(att.actualOutTime) : "-",
-      late: att.isLate ? "Yes" : "No",
-      overtimeMinutes: att.overtimeMinutes || 0,
-      overtimePay: att.overtimePay || 0,
-      totalPenalty: att.totalPenalty || 0,
-      lateMinutes: att.lateMinutes,
-    }));
-    console.log(salaryTableData);
 
-    setSalaryTableData(salaryTableData);
-  }, [selectedMonth, staffData, selectYear]);
+    const tableData = monthAttendances.map((att) => {
+      const workingMinutesPerDay =
+        att.shiftStartTime && att.shiftEndTime
+          ? Math.floor(
+              (new Date(att.shiftEndTime) - new Date(att.shiftStartTime)) /
+                (1000 * 60),
+            )
+          : 0;
+
+      const penaltyMinutes = calculatePenaltyMinutes({
+        workingMinutesPerDay,
+        actualIn: att.actualInTime,
+        actualOut: att.actualOutTime,
+      });
+
+      return {
+        date: formatDate(att.date),
+        inTime: formatTime(att.actualInTime),
+        outTime: att.actualOutTime ? formatTime(att.actualOutTime) : "-",
+        late: att.isLate ? "Yes" : "No",
+        overtimeMinutes: att.overtimeMinutes || 0,
+        overtimePay: att.overtimePay || 0,
+
+        lateMinutes: penaltyMinutes,
+
+        totalPenalty: att.totalPenalty || 0,
+        status: att.status,
+      };
+    });
+
+
+    setSalaryTableData(tableData);
+  }, [selectedMonth, selectYear, staffData]);
+
+  const totalOvertimePay = salaryTableData.reduce(
+    (sum, att) => sum + (att.overtimePay || 0),
+    0,
+  );
+
+  const totalPenalty = salaryTableData.reduce(
+    (sum, att) => sum + (att.totalPenalty || 0),
+    0,
+  );
 
   return (
     <>
       <div className="h-full bg-white m-2 gap-2 rounded flex flex-col overflow-hidden p-5">
-        {/* filter */}
-        <div className="w-full flex justify-end p-2  gap-2">
-          <Label htmlFor={`Sort`} className={`uppercase`}>
+        {/* Filters */}
+        <div className="w-full flex justify-end p-2 gap-2">
+          <Label htmlFor="month" className="uppercase">
             SortBy:
           </Label>
+
+          {/* Month */}
           <Select
             value={list[selectedMonth]}
             onValueChange={(v) => setSelectedMonth(list.indexOf(v))}
           >
-            <SelectTrigger id={`Sort`}>
-              <SelectValue placeholder={`SortBy`} />
+            <SelectTrigger id="month">
+              <SelectValue placeholder="Month" />
             </SelectTrigger>
+
             <SelectContent>
               {list.map((item, i) => (
                 <SelectItem key={i} value={item}>
@@ -144,52 +286,53 @@ const StaffSalary = () => {
               ))}
             </SelectContent>
           </Select>
-          <Select value={selectYear} onValueChange={(v) => setSelectedYear(v)}>
-            <SelectTrigger id={`Sort`}>
-              <SelectValue placeholder={`SortBy`} />
+
+          {/* Year */}
+          <Select
+            value={String(selectYear)}
+            onValueChange={(v) => setSelectedYear(Number(v))}
+          >
+            <SelectTrigger id="year">
+              <SelectValue placeholder="Year" />
             </SelectTrigger>
+
             <SelectContent>
-              {years.map((item, i) => (
-                <SelectItem key={i} value={item}>
+              {years.map((item) => (
+                <SelectItem key={item} value={String(item)}>
                   {item}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        {/* summary card */}
+
+        {/* Summary Cards */}
         <div className="flex gap-4">
+          {/* Overtime */}
           <div className="bg-gray-100 w-[98%] xl:h-[20vh] xl:w-[30vw] rounded p-2 py-4 flex flex-col justify-between relative">
             <h1 className="font-semibold text-xl">
               Net OverTime Pay(Current month)
             </h1>
-            <p className="text-6xl text-green-600">
-              ₹
-              {salaryTableData.reduce(
-                (sum, att) => sum + (att.overtimePay || 0),
-                0,
-              )}
-            </p>
+
+            <p className="text-6xl text-green-600">₹{totalOvertimePay}</p>
           </div>
+
+          {/* Penalty */}
           <div className="bg-gray-100 w-[98%] xl:h-[20vh] xl:w-[30vw] rounded p-2 py-4 flex flex-col justify-between relative">
             <h1 className="font-semibold text-xl">
               Net Penalties Pay(Current month)
             </h1>
-            <p className="text-6xl text-red-600">
-              ₹
-              {salaryTableData.reduce(
-                (sum, att) => sum + (att.totalPenalty || 0),
-                0,
-              )}
-            </p>
+
+            <p className="text-6xl text-red-600">₹{totalPenalty}</p>
           </div>
         </div>
-        {/* OverTime table */}
 
-        <div className="bg-gray-100 h-[91%]  overflow-auto w-[98%] rounded p-2 pb-4 pt-0 flex flex-col xl:justify-start relative">
+        {/* Attendance Table */}
+        <div className="bg-gray-100 h-[91%] overflow-auto w-[98%] rounded p-2 pb-4 pt-0 flex flex-col xl:justify-start relative">
           <div className="sticky top-0 bg-gray-100 pt-2">
-            <h1 className=" font-semibold uppercase">Overtimes</h1>
-            <ul className="grid  grid-cols-[100px_180px_260px_220px_140px_140px_150px_150px] xl:grid-cols-8 text-center border-b p-2 font-semibold">
+            <h1 className="font-semibold uppercase">Overtimes</h1>
+
+            <ul className="grid grid-cols-[100px_180px_260px_220px_140px_140px_150px_150px] xl:grid-cols-8 text-center border-b p-2 font-semibold">
               {salaryTableHeaders.map((item, i) => (
                 <li key={i}>{item}</li>
               ))}
@@ -202,22 +345,29 @@ const StaffSalary = () => {
               className="grid grid-cols-[100px_180px_260px_220px_140px_140px_150px_150px] xl:grid-cols-8 text-center border-b p-2"
             >
               <li>{item.date}</li>
-              <li>{item.inTime}</li>
-              <li>{item.outTime}</li>
-              <li>{item.late}</li>
-              <li>{item.overtimeMinutes}</li>
+
+              <li>{item.status === "PRESENT" ? item.inTime : "-"}</li>
+
+              <li>{item.status === "PRESENT" ? item.outTime : "-"}</li>
+
+              <li>{item.status === "PRESENT" ? item.late : "-"}</li>
+
+              <li>{item.status === "PRESENT" ? item.overtimeMinutes : "-"}</li>
+
               <li
-                className={`${
+                className={
                   item.overtimePay > 0 ? "text-green-600 font-semibold" : ""
-                }`}
+                }
               >
                 ₹{item.overtimePay}
               </li>
-              <li>{item.lateMinutes}</li>
+
+              <li>{item.status === "PRESENT" ? item.lateMinutes > 60 ? `${(item.lateMinutes/60).toPrecision(2)} hrs` : `${item.lateMinutes} mins` : "-"}</li>
+
               <li
-                className={`${
+                className={
                   item.totalPenalty > 0 ? "text-red-600 font-semibold" : ""
-                }`}
+                }
               >
                 ₹{item.totalPenalty}
               </li>

@@ -72,7 +72,9 @@ const FacMain = () => {
 
       setLecture(lectureData);
 
-      setFaculty(facultyData[0]);
+
+
+      setFaculty(facultyData);
     };
 
     loadData();
@@ -129,9 +131,7 @@ const FacMain = () => {
 
     if (!userId) return;
     const facultyData = async () => {
-      console.log("Inside function");
       if (facultyType === "LECTURE_BASED") {
-        console.log("inSide if else");
         const { data } = await axios.get(
           `${mainRoute}/api/attendance/faculty/${userId}/monthly-summary?month=${currentMonth + 1}&year=${currentYear}`,
           {

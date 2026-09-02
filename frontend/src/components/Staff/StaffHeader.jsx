@@ -10,7 +10,6 @@ const StaffHeader = ({ title, setOpen }) => {
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
-      console.log("User from localStorage:", parsedUser);
     }
   }, []);
   return (

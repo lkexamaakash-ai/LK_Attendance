@@ -7,13 +7,11 @@ const FacHeader = ({ title }) => {
    const [user, setUser] = useState(null);
   
     useEffect(() => {
-      console.log("useEffect started");
   
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
-        console.log("User from localStorage:", parsedUser);
       }
     }, []);
 

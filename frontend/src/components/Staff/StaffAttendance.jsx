@@ -33,7 +33,7 @@ const StaffAttendance = () => {
     {
       length: cYear - 2024 + 1,
     },
-    (_, i) => 2024 + i
+    (_, i) => 2024 + i,
   );
 
   const [sortBy, setSortBy] = useState("latest");
@@ -69,37 +69,88 @@ const StaffAttendance = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
-      console.log(data.data);
       const facultyData = data.data;
-      console.log(facultyData);
 
       setStaffData(facultyData);
     };
 
     loadData();
-  }, [mon,yea]);
+  }, [mon, yea]);
 
-  const sortedAttendance = [...attendanceHistoryData].sort((a, b) => {
-    const dateA = new Date(a.date);
-    const dateB = new Date(b.date);
+  const sortedAttendance = [...attendanceHistoryData]
+    .map((item) => {
+      if (item.status !== "PRESENT") {
+        return {
+          ...item,
+          calculatedLateMinutes: 0,
+        };
+      }
 
-    if (sortBy === "latest") {
-      return dateB - dateA; // newest first
-    } else {
-      return dateA - dateB; // oldest first
+      const workingMinutesPerDay =
+        item.shiftStartTime && item.shiftEndTime
+          ? Math.floor(
+              (new Date(item.shiftEndTime) - new Date(item.shiftStartTime)) /
+                (1000 * 60),
+            )
+          : 0;
+
+      const calculatedLateMinutes = calculatePenaltyMinutes({
+        workingMinutesPerDay,
+        actualIn: item.actualInTime,
+        actualOut: item.actualOutTime,
+      });
+
+      return {
+        ...item,
+        calculatedLateMinutes,
+      };
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+
+      return sortBy === "latest" ? dateB - dateA : dateA - dateB;
+    });
+
+  function calculatePenaltyMinutes({
+    workingMinutesPerDay,
+    actualIn,
+    actualOut,
+  }) {
+    const GRACE_MINUTES = 15;
+
+    if (!workingMinutesPerDay || !actualIn || !actualOut) {
+      return 0;
     }
-  });
+
+    const actualInDate = new Date(actualIn);
+    const actualOutDate = new Date(actualOut);
+
+    if (isNaN(actualInDate.getTime()) || isNaN(actualOutDate.getTime())) {
+      return 0;
+    }
+
+    const actualWorkedMinutes = Math.floor(
+      (actualOutDate - actualInDate) / (1000 * 60),
+    );
+
+    const shortfallMinutes = Math.max(
+      0,
+      workingMinutesPerDay - actualWorkedMinutes,
+    );
+
+    return shortfallMinutes > GRACE_MINUTES ? shortfallMinutes : 0;
+  }
 
   useEffect(() => {
-    console.log(staffData);
     setAttendanceHistoryData(staffData || []);
   }, [staffData]);
 
   const formatTime = (isoTime) => {
-    if(!isoTime) return "";
-    const date = new Date(isoTime)
+    if (!isoTime) return "";
+    const date = new Date(isoTime);
     return date.toLocaleTimeString("en-IN", {
       hour: "numeric",
       minute: "2-digit",
@@ -168,12 +219,24 @@ const StaffAttendance = () => {
             >
               <li>{formatDate(item.date)}</li>
               <li>{`${formatTime(item.shiftStartTime)}-${formatTime(
-                item.shiftEndTime
+                item.shiftEndTime,
               )}`}</li>
-              <li>{formatTime(item.actualInTime)}</li>
-              <li>{formatTime(item.actualOutTime)}</li>
-              <li>{item.isLate ? "Yes" : "No"}</li>
-              <li>{item.overtimeMinutes}min</li>
+              <li>
+                {item.status === "PRESENT"
+                  ? formatTime(item.actualInTime)
+                  : "-"}
+              </li>
+              <li>
+                {item.status === "PRESENT"
+                  ? formatTime(item.actualOutTime)
+                  : "-"}
+              </li>
+              <li>
+                {item.status === "PRESENT" ? (item.isLate ? "Yes" : "No") : "-"}
+              </li>
+              <li>
+                {item.status === "PRESENT" ? `${item.overtimeMinutes}min` : "-"}
+              </li>
               <li
                 className={`${
                   item.overtimePay > 0 ? "text-green-600 font-semibold" : ""
@@ -181,7 +244,13 @@ const StaffAttendance = () => {
               >
                 ₹{item.overtimePay}
               </li>
-              <li>{item.lateMinutes}mins</li>
+              <li>
+                {item.status === "PRESENT"
+                  ? item.calculatedLateMinutes > 60
+                    ? `${(item.calculatedLateMinutes / 60).toPrecision(2)} hrs`
+                    : `${item.calculatedLateMinutes} mins`
+                  : "-"}
+              </li>
               <li
                 className={`${
                   item.totalPenalty > 0 ? "text-red-600 font-semibold" : ""

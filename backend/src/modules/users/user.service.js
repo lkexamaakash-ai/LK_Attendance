@@ -386,9 +386,9 @@ const branchDashboard = async () => {
 };
 
 const userDashboard = async ({ branchId, userId }) => {
-  let branch
+  let branch;
   if (branchId) {
-     branch = await prisma.branch.findMany({
+    branch = await prisma.branch.findMany({
       where: {
         id: branchId,
       },
@@ -420,28 +420,58 @@ const userDashboard = async ({ branchId, userId }) => {
     });
   }
 
-  const faculty = await prisma.user.findMany({
+  const faculty = await prisma.user.findUnique({
     where: {
       id: userId,
     },
     include: {
       facultySubjects: {
-        include: { subject: true },
+        include: {
+          subject: true,
+        },
       },
       lectures: {
-        include: { attendance: true, batch: true },
+        include: {
+          attendance: true,
+          batch: true,
+        },
       },
       branch: true,
       staffAttendances: true,
-      facultyBranches:true
+      facultyBranches: {
+        include: {
+          branch: true,
+        },
+      },
     },
   });
 
-  if(!branchId) branch = faculty.facultyBranches
+  if (!branchId) {
+    if (faculty.role === "FACULTY") {
+      branch = faculty.facultyBranches.map((fb) => fb.branch);
+    } else {
+      branch = faculty.branch ? [faculty.branch] : [];
+    }
+  }
+
+  const branchIds = branchId
+    ? [branchId]
+    : faculty.role === "FACULTY"
+      ? faculty.facultyBranches.map((fb) => fb.branchId)
+      : faculty.branchId
+        ? [faculty.branchId]
+        : [];
 
   const lectures = await prisma.lectureSchedule.findMany({
     where: {
       facultyId: userId,
+      batch: {
+        course: {
+          branchId: {
+            in: branchIds,
+          },
+        },
+      },
     },
     include: {
       faculty: true,
@@ -449,9 +479,9 @@ const userDashboard = async ({ branchId, userId }) => {
       batch: {
         include: {
           course: {
-            include:{
-              branch
-            }
+            include: {
+              branch: true,
+            },
           },
         },
       },

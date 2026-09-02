@@ -63,7 +63,6 @@ const FacLecture = () => {
       );
 
       const filterData = data.data;
-      console.log(filterData);
       setLectureData(filterData);
     };
     loadData();

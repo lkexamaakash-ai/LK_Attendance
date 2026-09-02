@@ -64,10 +64,12 @@ const StaffMain = () => {
           },
         },
       );
-      const facultyData = data.data.faculty
-        .filter((user) => user.id === tokn.data.user.id)
-        .find((user) => user.branchId === tokn.data.user.branch.id);
-      console.log(facultyData);
+      // const facultyData = data.data.faculty
+      //   .filter((user) => user.id === tokn.data.user.id)
+      //   .find((user) => user.branchId === tokn.data.user.branch.id);
+
+      const facultyData = data.data.faculty;
+      
 
       setStaffData(facultyData);
 
@@ -212,7 +214,6 @@ const StaffMain = () => {
                   ))}
                 </ul>
                 {recentAttendance.map((item, i) => {
-                  console.log(item);
                   return (
                     <ul key={i} className="xl:bg-[#ffffff] my-1 rounded p-1">
                       <li className="">{item.date}</li>
