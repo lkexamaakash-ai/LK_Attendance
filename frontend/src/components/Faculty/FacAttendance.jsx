@@ -43,7 +43,6 @@ const FacAttendance = () => {
 
   const [lecData, setLecData] = useState([]);
 
-  // Store month/year as STRING because Select works with strings
   const [currentmon, setCurrentMon] = useState(String(new Date().getMonth()));
 
   const [currentyea, setCurrentYea] = useState(
@@ -59,6 +58,10 @@ const FacAttendance = () => {
   const [appliedStatus, setAppliedStatus] = useState("ALL");
   const [appliedFromDate, setAppliedFromDate] = useState("");
   const [appliedToDate, setAppliedToDate] = useState("");
+
+  const [selectedBranch, setSelectedBranch] = useState("ALL");
+
+  // const [appliedBranch, setAppliedBranch] = useState("ALL");
 
   const mapLecturesToUI = (lectures) => {
     if (!Array.isArray(lectures)) return [];
@@ -81,6 +84,7 @@ const FacAttendance = () => {
               date: formatDate(att.date || lec.StartDate),
 
               subject: lec.subject?.name || "-",
+              branch: att?.lecture.batch?.course?.branch?.name || "-",
 
               plannedTime: `${formatTime(
                 lec.startTime,
@@ -207,6 +211,10 @@ const FacAttendance = () => {
   };
 
   const filteredAttendance = myLecturesData.filter((item) => {
+    if (selectedBranch !== "ALL" && item.branch !== selectedBranch) {
+      return false;
+    }
+
     if (appliedSubject !== "ALL" && item.subject !== appliedSubject) {
       return false;
     }
@@ -238,6 +246,14 @@ const FacAttendance = () => {
 
   const subjects = [
     ...new Set(myLecturesData.map((item) => item.subject).filter(Boolean)),
+  ];
+
+  const branches = [
+    ...new Set(
+      myLecturesData
+        .map((item) => item.branch)
+        .filter((branch) => branch && branch !== "-"),
+    ),
   ];
 
   const handleApplyFilters = () => {
@@ -288,6 +304,24 @@ const FacAttendance = () => {
                 {years.map((item) => (
                   <SelectItem key={item} value={String(item)}>
                     {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+              <SelectTrigger className="w-45">
+                <SelectValue placeholder="Branch" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="ALL">All Branches</SelectItem>
+
+                {branches.map((branch) => (
+                  <SelectItem key={branch} value={branch}>
+                    {branch}
                   </SelectItem>
                 ))}
               </SelectContent>
