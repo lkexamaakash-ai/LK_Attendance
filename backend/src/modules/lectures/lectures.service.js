@@ -93,21 +93,27 @@ const getLectureByIdAndType = async (id, type, month, year) => {
           orderBy: {
             date: "asc",
           },
-          include:{
-            lecture:{
-              include:{
-                batch:{
-                  include:{
-                    course:{
-                      include:{
-                        branch:true
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
+          include: {
+            lecture: {
+              include: {
+                batch: {
+                  select: {
+                    name: true,
+                    course: {
+                      select: {
+                        name: true,
+                        branch: {
+                          select: {
+                            name: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
         subject: true,
         batch: {

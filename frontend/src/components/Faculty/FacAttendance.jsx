@@ -160,6 +160,7 @@ const FacAttendance = () => {
 
   useEffect(() => {
     if (typ === "LECTURE_BASED") {
+      console.log(serverdata)
       const uiData = mapLecturesToUI(serverdata);
       setMyLecturesData(uiData);
     } else {
