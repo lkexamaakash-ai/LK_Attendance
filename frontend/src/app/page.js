@@ -13,6 +13,9 @@ export default function Home() {
 
 
     if(loggedIn){
+      if(loggedIn.data.user.mustChangePassword){
+        redirect("/set-password")
+      }
       if(loggedIn.data.user.role === "SUPER_ADMIN"){
         redirect("/superadmin")
       }
