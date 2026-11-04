@@ -30,6 +30,13 @@ const Login = () => {
       );
 
       localStorage.setItem("user", JSON.stringify(data));
+
+      if (data?.data?.user?.mustChangePassword) {
+        router.push("/set-password");
+        toast.success("Please set a new password to continue");
+        return;
+      }
+
       router.push("/");
       toast.success("Login Successful");
     } catch (error) {

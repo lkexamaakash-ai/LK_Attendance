@@ -2,6 +2,27 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { prisma } = require("../../config/db");
 
+const getDefaultPassword = () => {
+  const pass = process.env.DEFAULT_PASSWORD;
+  if (!pass) {
+    throw new Error("DEFAULT_PASSWORD is not configured on the server");
+  }
+  return pass;
+};
+
+const signToken = (user) =>
+  jwt.sign(
+    {
+      id: user.id,
+      role: user.role,
+      mustChangePassword: !!user.mustChangePassword,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN,
+    },
+  );
+
 const loginUser = async (phoneNumber, password) => {
   const user = await prisma.user.findUnique({
     where: { phoneNumber },
@@ -28,16 +49,7 @@ const loginUser = async (phoneNumber, password) => {
     throw new Error(`Not allowed to login`);
   }
 
-  const token = jwt.sign(
-    {
-      id: user.id,
-      role: user.role,
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: process.env.JWT_EXPIRES_IN,
-    },
-  );
+  const token = signToken(user);
 
   return {
     token,
@@ -49,6 +61,7 @@ const loginUser = async (phoneNumber, password) => {
       branchId: user.branchId,
       branch: user.branch,
       type: user.facultyType,
+      mustChangePassword: user.mustChangePassword,
     },
   };
 };
@@ -56,8 +69,10 @@ const loginUser = async (phoneNumber, password) => {
 const registerSuperAdmin = async (data) => {
   const { name, phoneNumber, password, code } = data;
 
-  if (process.env.code !== code) {
-    throw new Error("You are authorized to register");
+  const expectedCode = process.env.CODE ?? process.env.code;
+
+  if (!expectedCode || expectedCode !== code) {
+    throw new Error("You are not authorized to register");
   }
 
   const existingUser = await prisma.user.findUnique({
@@ -107,7 +122,6 @@ const registerUser = async (data) => {
   const {
     name,
     phoneNumber,
-    password,
     role,
     branchId,
     branchIds,
@@ -130,7 +144,7 @@ const registerUser = async (data) => {
     throw new Error(`User already exists with this phoneNumber`);
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(getDefaultPassword(), 10);
 
   const today = new Date().toISOString().split("T")[0];
   console.log(today);
@@ -158,6 +172,7 @@ const registerUser = async (data) => {
         name,
         phoneNumber,
         password: hashedPassword,
+        mustChangePassword: true,
         role,
         branchId: branchId || null,
         shiftStartTime: new Date(shiftStart.toISOString()),
@@ -194,6 +209,7 @@ const registerUser = async (data) => {
           name,
           phoneNumber,
           password: hashedPassword,
+          mustChangePassword: true,
           role,
           branchId: null,
           facultyType,
@@ -228,6 +244,7 @@ const registerUser = async (data) => {
           name,
           phoneNumber,
           password: hashedPassword,
+          mustChangePassword: true,
           role,
           branchId: null,
           facultyType,
@@ -262,42 +279,56 @@ const changePassword = async (id, newPass, oldPass) => {
     where: { id },
   });
 
+  if (!user) {
+    throw new Error("User Not found");
+  }
+
   const comparePass = await bcrypt.compare(oldPass, user.password);
 
   if (!comparePass) {
     return {
       data: "wrong pass",
     };
-  } else {
-    const hashpass = await bcrypt.hash(newPass, 10);
-    return await prisma.user.update({
-      where: {
-        id,
-      },
-      data: {
-        password: hashpass,
-      },
-    });
   }
+
+  const hashpass = await bcrypt.hash(newPass, 10);
+  const updated = await prisma.user.update({
+    where: {
+      id,
+    },
+    data: {
+      password: hashpass,
+      mustChangePassword: false,
+    },
+  });
+
+  return {
+    id: updated.id,
+    name: updated.name,
+    phoneNumber: updated.phoneNumber,
+    role: updated.role,
+  };
 };
 
-const bulkRegisterUser = async (users, CurrentUser) => {
+const bulkRegisterUser = async (users) => {
   const createdUser = [];
   const errors = [];
+  const hashedPassword = await bcrypt.hash(getDefaultPassword(), 10);
+  const validRoles = ["SUPER_ADMIN", "BRANCH_ADMIN", "FACULTY", "STAFF"];
 
   for (let i = 0; i < users.length; i++) {
     const user = users[i];
-    const { name, phoneNumber, password, role, branchId } = user;
+    const { name, phoneNumber, role, branchId } = user;
 
     try {
-      if (CurrentUser.role === "BRANCH_ADMIN") {
-        if (role === "SUPER_ADMIN") {
-          throw new Error("Branch admin cannot create super admin");
-        }
-        if (branchId !== CurrentUser.branchId) {
-          throw new Error("Branch admin can only add users of own branch");
-        }
+      if (!name || !phoneNumber || !role) {
+        throw new Error("name, phoneNumber and role are required");
       }
+
+      if (!validRoles.includes(role)) {
+        throw new Error("Invalid role");
+      }
+
       const exists = await prisma.user.findUnique({
         where: { phoneNumber },
       });
@@ -306,13 +337,12 @@ const bulkRegisterUser = async (users, CurrentUser) => {
         throw new Error(`phoneNumber already exists`);
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
-
       const newUser = await prisma.user.create({
         data: {
           name,
           phoneNumber,
           password: hashedPassword,
+          mustChangePassword: true,
           role,
           branchId: branchId || null,
         },
@@ -360,7 +390,52 @@ const updatepasswordService = async (userId, password) => {
   return updatedUser;
 };
 
+const firstLoginPassword = async (userId, newPassword) => {
+  const user = await prisma.user.findUnique({
+    where: { id: Number(userId) },
+  });
+
+  if (!user) {
+    throw new Error("User Not found");
+  }
+
+  if (!user.mustChangePassword) {
+    throw new Error("Password change on first login is not required");
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error("Password must be at least 6 characters long");
+  }
+
+  if (newPassword === getDefaultPassword()) {
+    throw new Error("New password cannot be the default password");
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  const updated = await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      password: hashedPassword,
+      mustChangePassword: false,
+    },
+  });
+
+  return {
+    token: signToken(updated),
+    user: {
+      id: updated.id,
+      name: updated.name,
+      phoneNumber: updated.phoneNumber,
+      role: updated.role,
+      branchId: updated.branchId,
+      mustChangePassword: updated.mustChangePassword,
+    },
+  };
+};
+
 module.exports = {
+  firstLoginPassword,
   loginUser,
   registerUser,
   bulkRegisterUser,
