@@ -62,7 +62,7 @@ const CourseManagement = () => {
 
         <div className="w-full">
           <ul
-            className={`grid grid-cols-${lists.length} xl:px-4 text-sm py-3 border-b border-gray-500 font-bold text-center`}
+            className={`grid grid-cols-6 xl:px-4 text-sm py-3 border-b border-gray-500 font-bold text-center`}
           >
             {lists.map((item, index) => (
               <li key={index}>{item}</li>
@@ -73,7 +73,7 @@ const CourseManagement = () => {
               return (
                 <ul
                   key={i}
-                  className={`grid grid-cols-${lists.length} text-sm xl:text-[1rem] px-4 py-3 border-b border-gray-500 text-center items-center hover:bg-gray-100`}
+                  className={`grid grid-cols-6 text-sm xl:text-[1rem] px-4 py-3 border-b border-gray-500 text-center items-center hover:bg-gray-100`}
                 >
                   <li>{i + 1}</li>
                   <li>{cour?.name}</li>
