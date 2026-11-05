@@ -20,9 +20,19 @@ const morgan = require("morgan");
 
 app.use(morgan("dev"));
 
+// Extra allowed frontend addresses, comma separated (e.g. https://my-site.vercel.app)
+const extraOrigins = (process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((o) => o.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://lk-academy.vercel.app"],
+    origin: [
+      "http://localhost:3000",
+      "https://lk-academy.vercel.app",
+      ...extraOrigins,
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   }),
