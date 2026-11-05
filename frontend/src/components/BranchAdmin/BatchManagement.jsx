@@ -1,4 +1,5 @@
 "use client";
+import EmptyState from "@/components/layout/EmptyState";
 import React, { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import axios from "axios";
@@ -44,11 +45,11 @@ const BatchManagement = () => {
   return (
     <>
       {/* <div className="h-full w-full p-4 py-6 flex flex-wrap gap-5 flex-col items-center "> */}
-      <div className="h-full bg-white m-2 rounded flex flex-col items-center p-4 py-6 overflow-hidden">
+      <div className="h-full bg-white m-2 rounded-xl border border-stone-200 shadow-sm flex flex-col items-center p-4 py-6 overflow-hidden">
         <div className="w-full flex items-center justify-end">
           <Button
             variant="secondary"
-            className={`bg-green-600 text-gray-200 hover:bg-green-700 `}
+            className={`bg-maroon-700 text-white hover:bg-maroon-800 `}
             onClick={() => {
               setOpen(true);
               setType("add");
@@ -58,7 +59,7 @@ const BatchManagement = () => {
           </Button>
         </div>
         <div className="w-full overflow-auto">
-          <ul className="grid grid-cols-7 xl:px-4 text-sm py-3 border-b border-gray-500 font-bold text-center">
+          <ul className="grid grid-cols-7 xl:px-4 text-sm py-3 border border-maroon-100 bg-maroon-50 text-maroon-800 rounded-lg font-semibold text-center">
             {lists.map((item, index) => (
               <li key={index}>{item}</li>
             ))}
@@ -73,7 +74,7 @@ const BatchManagement = () => {
               return (
                 <ul
                   key={branche.id}
-                  className="grid grid-cols-7 text-sm xl:text-[1rem] px-4 py-3 border-b border-gray-500 text-center items-center hover:bg-gray-100"
+                  className="grid grid-cols-7 text-sm xl:text-[1rem] px-4 py-3 border-b border-stone-200 text-center items-center text-slate-700 transition-colors hover:bg-maroon-50/70"
                 >
                   <li className="font-semibold">{index + 1}</li>
                   <li>{branche.name}</li>
@@ -146,7 +147,7 @@ const BatchManagement = () => {
               );
             })
           ) : (
-            <p className="text-center my-5 text-xl">No Batches</p>
+            <EmptyState message="No Batches" />
           )}
         </div>
       </div>

@@ -127,17 +127,17 @@ const ReportModels = ({ open, setOpen, user, setUser }) => {
   return (
     <>
       {open && (
-        <div className="h-screen w-full bg-[#d8d3d382] absolute top-0 left-0 flex justify-center items-center">
-          <div className="h-auto p-5 md:w-[60vw] lg:w-[40vw] bg-white shadow-2xl rounded-2xl  ">
+        <div className="h-screen w-full bg-maroon-900/40 backdrop-blur-[2px] absolute top-0 left-0 flex justify-center items-center">
+          <div className="h-auto p-5 md:w-[60vw] lg:w-[40vw] bg-white shadow-2xl rounded-2xl border border-stone-200  ">
             <div className="flex justify-end px-5">
               <span
-                className="cursor-pointer font-bold"
+                className="cursor-pointer rounded-full px-2.5 py-1 text-base leading-none text-slate-400 transition-colors hover:bg-maroon-50 hover:text-maroon-700"
                 onClick={() => {
                   setOpen(false);
                   setUser({});
                 }}
               >
-                x
+                ✕
               </span>
             </div>
 
@@ -222,7 +222,7 @@ const ReportModels = ({ open, setOpen, user, setUser }) => {
                     ? handleSendWhatsappMsg
                     : () => setOping(true)
                 }
-                className={`w-1/2 mt-5 cursor-pointer bg-green-500 hover:bg-green-600 mx-auto`}
+                className={`w-1/2 mt-5 cursor-pointer bg-maroon-700 text-white hover:bg-maroon-800 mx-auto`}
               >
                 <Image
                   src={"/whatsapp.png"}

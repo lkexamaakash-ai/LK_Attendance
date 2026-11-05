@@ -141,7 +141,7 @@ const FacLecture = () => {
 
   return (
     <>
-      <div className="h-full bg-white m-2 rounded flex flex-col overflow-auto items-center">
+      <div className="h-full bg-white m-2 rounded-xl border border-stone-200 shadow-sm flex flex-col overflow-auto items-center">
         {/* filter */}
         <div className="w-[98%] flex items-center justify-between p-3 border-b">
           {/* LEFT - Course & Branch */}

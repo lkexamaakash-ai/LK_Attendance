@@ -100,11 +100,11 @@ const Staff = () => {
 
   return (
     <>
-      <div className="h-[91%] bg-white m-2 rounded p-4 py-6 flex flex-wrap gap-5 flex-col items-center">
+      <div className="h-[91%] bg-white m-2 rounded-xl border border-stone-200 shadow-sm p-4 py-6 flex flex-wrap gap-5 flex-col items-center">
         <div className="w-full h-[99%] overflow-auto xl:overflow-x-hidden">
           <ul
             className="grid grid-cols-[100px_250px_150px_150px_140px_140px_160px_140px_120px_120px]
-          px-4 py-3 xl:grid-cols-10 xl:border-b xl:border-gray-500 font-bold text-center "
+          px-4 py-3 xl:grid-cols-10   font-semibold rounded-lg border border-maroon-100 bg-maroon-50 text-maroon-800 text-center "
           >
             {staffHeaders.map((item, i) => (
               <li key={i}>{item}</li>
@@ -116,7 +116,7 @@ const Staff = () => {
             return (
               <ul
                 key={i}
-                className="grid grid-cols-[100px_250px_150px_150px_140px_140px_160px_140px_120px_120px] xl:grid-cols-10 px-4 py-3 xl:border-b xl:border-gray-500 text-center items-center text-wrap hover:bg-gray-50"
+                className="border-b border-stone-200 text-slate-700 transition-colors grid grid-cols-[100px_250px_150px_150px_140px_140px_160px_140px_120px_120px] xl:grid-cols-10 px-4 py-3   text-center items-center text-wrap hover:bg-maroon-50/70"
               >
                 <li>{staff.name}</li>
                 <li>{staff.phoneNumber}</li>

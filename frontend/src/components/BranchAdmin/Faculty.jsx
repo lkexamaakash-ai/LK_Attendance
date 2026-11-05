@@ -109,9 +109,9 @@ const Faculty = () => {
   }, []);
 
   return (
-    <div className="h-[91%] bg-white m-2 rounded p-4 py-6 flex flex-wrap gap-5 flex-col items-center ">
+    <div className="h-[91%] bg-white m-2 rounded-xl border border-stone-200 shadow-sm p-4 py-6 flex flex-wrap gap-5 flex-col items-center ">
       <div className="w-full h-full overflow-auto xl:overflow-x-hidden ">
-        <ul className="grid grid-cols-[60px_180px_220px_200px_140px_140px_120px_140px_150px] xl:grid-cols-8 px-4 py-3 xl:border-b xl:border-gray-500 font-bold text-center">
+        <ul className="grid grid-cols-[60px_180px_220px_200px_140px_140px_120px_140px_150px] xl:grid-cols-8 px-4 py-3   font-semibold rounded-lg border border-maroon-100 bg-maroon-50 text-maroon-800 text-center">
           {lists.map((item, index) => (
             <li key={index}>{item}</li>
           ))}
@@ -124,7 +124,7 @@ const Faculty = () => {
             <div key={index} className="">
               <ul
                 key={index}
-                className="grid grid-cols-[60px_180px_220px_200px_140px_140px_120px_140px_150px] xl:grid-cols-8 px-4 py-3 xl:border-b xl:border-gray-500 text-center items-center text-wrap hover:bg-gray-50"
+                className="border-b border-stone-200 text-slate-700 transition-colors grid grid-cols-[60px_180px_220px_200px_140px_140px_120px_140px_150px] xl:grid-cols-8 px-4 py-3   text-center items-center text-wrap hover:bg-maroon-50/70"
               >
                 <li className="font-semibold">{index + 1}</li>
                 <li className="flex items-center justify-center gap-2">

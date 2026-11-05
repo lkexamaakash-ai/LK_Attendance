@@ -3,6 +3,18 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { mainRoute } from "../apiroute";
 import Audit from "../superAdmin/Models/Audit";
+import StatCard from "../layout/StatCard";
+import LectureOverviewChart from "../chart/LectureOverviewChart";
+import {
+  Activity,
+  Briefcase,
+  Building2,
+  CircleCheck,
+  GraduationCap,
+  Layers,
+  Presentation,
+  TriangleAlert,
+} from "lucide-react";
 
 const Dash = () => {
   const [faculty, setFaculty] = useState([]);
@@ -78,108 +90,70 @@ const Dash = () => {
     fetchAuditLogs();
   }, []);
 
+  const countAttendance = (fn) =>
+    lecture.reduce((count, lec) => {
+      if (!Array.isArray(lec.attendance)) return count;
+      return count + lec.attendance.filter(fn).length;
+    }, 0);
+
   return (
     <>
-      {/* <div className="h-full w-full p-4 py-6 flex flex-wrap gap-5 justify-center [&>div]:bg-[#BE6B66]"> */}
-      <div className="h-[91%] bg-white m-2 rounded xl:flex xl:flex-col gap-5 p-4 py-6">
-        <div className="flex h-full flex-col xl:grid xl:grid-cols-4 gap-4 xl:gap-2 w-full xl:[&>div]:h-[40vh] xl:[&>div]:w-[20vw] overflow-y-auto xl:overflow-hidden ">
-          <div className="rounded bg-gray-200 shadow-lg border flex flex-col justify-center items-center min-h-35">
-            <h1 className="text-xl font-semibold uppercase">Branch Name</h1>
-            <p className="text-lg text-gray-600">{branch.name}</p>
-          </div>
+      <div className="h-[91%] overflow-y-auto m-2 rounded-xl border border-stone-200 bg-white p-4 shadow-sm sm:p-6">
+        <div className="grid w-full grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Branch Name" icon={Building2}>
+            {branch.name}
+          </StatCard>
 
-          {/* total Faculies */}
-          <div className="rounded bg-gray-200 shadow-lg border flex flex-col justify-center items-center min-h-35">
-            <h1 className="text-xl font-semibold uppercase">Total Faculty</h1>
-            <p className="text-lg text-gray-600">{faculty.length}</p>
-          </div>
+          <StatCard label="Total Faculty" icon={GraduationCap}>
+            {faculty.length}
+          </StatCard>
 
-          {/* total Staff */}
-          <div className="rounded bg-gray-200 shadow-lg border flex flex-col justify-center items-center min-h-35">
-            <h1 className="text-xl font-semibold uppercase">Total Staff</h1>
-            <p className="text-lg text-gray-600">{staff.length}</p>
-          </div>
+          <StatCard label="Total Staff" icon={Briefcase} tone="gold">
+            {staff.length}
+          </StatCard>
 
-          {/* total Lectures */}
-          <div className="rounded bg-gray-200 shadow-lg border flex flex-col justify-center items-center min-h-35">
-            <h1 className="text-xl font-semibold uppercase">Total Lectures</h1>
-            <p className="text-lg text-gray-600">
-              {lecture?.reduce(
-                (sum, lec) => sum + (lec.TotalScheduled || 0),
-                0,
-              )}
-            </p>
-          </div>
+          <StatCard label="Total Lectures" icon={Presentation} tone="slate">
+            {lecture?.reduce((sum, lec) => sum + (lec.TotalScheduled || 0), 0)}
+          </StatCard>
 
-          {/* total Penalties
-          <div className="h-[40%] w-[40%] rounded flex justify-center items-center flex-col text-gray-50 drop-shadow-2xl ">
-            <h1 className="text-2xl">Total Penalties</h1>
-            <p className="text-lg">205</p>
-          </div> */}
-          {/* <div className="grid grid-cols-4 gap-3 w-full [&>div]:rounded [&>div]:shadow-lg grid-rows-1 h-[20vh] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:items-center [&>div>h1]:text-2xl [&>div>h1]:font-semibold [&>div>h1]:uppercase [&>div>p]:text-lg [&>div>p]:font-medium [&>div>p]:text-gray-600 [&>div>h1]:text-gray-800 [&>div]:border  [&>div]:bg-gray-200 [&>div]:w-full [&>div]:h-full"> */}
-          <div className="rounded bg-gray-200 shadow-lg border flex flex-col justify-center items-center min-h-35">
-            <h1 className="text-xl font-semibold uppercase">
-              Lectures Conducted
-            </h1>
-            <p className="text-lg text-gray-600">
-              {lecture.reduce((count, lec) => {
-                if (!Array.isArray(lec.attendance)) return count;
-                return (
-                  count +
-                  lec.attendance.filter((att) => att.status === "CONDUCTED")
-                    .length
-                );
-              }, 0)}
-            </p>
-          </div>
+          <StatCard label="Lectures Conducted" icon={CircleCheck} tone="green">
+            {countAttendance((att) => att.status === "CONDUCTED")}
+          </StatCard>
 
-          {/* total Faculies */}
-          {/* <div className="rounded bg-gray-200 shadow-lg border flex flex-col justify-center items-center min-h-35">
-            <h1 className="text-xl font-semibold uppercase">Lectures Missed</h1>
-            <p className="text-lg text-gray-600">
-              {lecture.reduce((count, lec) => {
-                if (!Array.isArray(lec.attendance)) return count;
-                return (
-                  count +
-                  lec.attendance.filter((att) => att.status === "MISSED").length
-                );
-              }, 0)}
-            </p>
-          </div> */}
+          <StatCard label="Total Penalty" icon={TriangleAlert} tone="red">
+            {countAttendance((att) => att.penalty && att.penalty !== "NONE")}
+          </StatCard>
 
-          {/* total Staff */}
-          <div className="rounded bg-gray-200 shadow-lg border flex flex-col justify-center items-center min-h-35">
-            <h1 className="text-xl font-semibold uppercase">Total Penalty</h1>
-            <p className="text-lg text-gray-600">
-              {lecture.reduce((count, lec) => {
-                if (!Array.isArray(lec.attendance)) return count;
-                return (
-                  count +
-                  lec.attendance.filter(
-                    (att) => att.penalty && att.penalty !== "NONE",
-                  ).length
-                );
-              }, 0)}
-            </p>
-          </div>
-
-          <div className="rounded bg-gray-200 shadow-lg border flex flex-col justify-center items-center min-h-35">
-            <h1 className="text-xl font-semibold uppercase">Total Batches</h1>
-            <p className="text-lg text-gray-600">{batches?.length || 0}</p>
-          </div>
+          <StatCard label="Total Batches" icon={Layers} tone="gold">
+            {batches?.length || 0}
+          </StatCard>
 
           <div
             onClick={() => setOpen(true)}
-            className="rounded bg-gray-200 shadow-lg border flex flex-col justify-around py-30 items-center min-h-35"
+            className="flex cursor-pointer items-center gap-4 rounded-xl border border-maroon-700 bg-gradient-to-br from-maroon-700 to-maroon-900 p-5 text-white shadow-sm transition-shadow hover:shadow-md"
           >
-            <h1 className="text-xl font-semibold uppercase">Activity Logs</h1>
-            <p className="px-10">
-              {logs.length > 0 && `${logs[0].user.name}-${logs[0].description}`}
-            </p>
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-white/15 text-gold-300">
+              <Activity className="size-6" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gold-300">
+                Activity Logs
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-sm text-maroon-100">
+                {logs.length > 0
+                  ? `${logs[0].user.name} - ${logs[0].description}`
+                  : "No activity yet"}
+              </p>
+            </div>
           </div>
         </div>
+
+        <LectureOverviewChart
+          conducted={countAttendance((att) => att.status === "CONDUCTED")}
+          missed={countAttendance((att) => att.status === "MISSED")}
+          penalties={countAttendance((att) => att.penalty && att.penalty !== "NONE")}
+        />
       </div>
-      {/* </div> */}
       {open && <Audit open={open} setOpen={setOpen} logs={logs} />}
     </>
   );

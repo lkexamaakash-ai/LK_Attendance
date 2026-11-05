@@ -180,7 +180,7 @@ const Report = () => {
 
   return (
     <>
-      <div className=" rounded h-[91%] bg-white m-2 overflow-hidden p-4">
+      <div className=" rounded-xl border border-stone-200 shadow-sm h-[91%] bg-white m-2 overflow-hidden p-4">
         <div className="flex gap-4 border-b-2 pb-2">
           <p className="text-xl font-semibold">Filter: </p>
           <Select value={role} onValueChange={(v) => setRole(v)}>
@@ -199,7 +199,7 @@ const Report = () => {
         </div>
         {role === "STAFF" && (
           <div className="h-[92%] w-full overflow-auto xl:overflow-x-hidden">
-            <ul className="grid grid-cols-[60px_180px_260px_220px_140px_140px_140px_140px] xl:grid-cols-8  px-4 py-3 xl:border-b border-gray-500 font-bold text-center">
+            <ul className="grid grid-cols-[60px_180px_260px_220px_140px_140px_140px_140px] xl:grid-cols-8  px-4 py-3 xl:border border-maroon-100 bg-maroon-50 text-maroon-800 rounded-lg font-semibold text-center">
               {staffReportHeaders.map((item, index) => (
                 <li key={index}>{item}</li>
               ))}
@@ -214,7 +214,7 @@ const Report = () => {
                     setUser(staff);
                   }}
                   key={index}
-                  className={`grid grid-cols-[60px_180px_260px_220px_140px_140px_140px_140px] xl:grid-cols-8 px-4 py-3 xl:border-b xl:border-gray-500 text-center items-center ${staff.isActive ? "bg-white" : "hover:bg-gray-50 bg-gray-100"}`}
+                  className={`border-b border-stone-200 text-slate-700 transition-colors grid grid-cols-[60px_180px_260px_220px_140px_140px_140px_140px] xl:grid-cols-8 px-4 py-3   text-center items-center ${staff.isActive ? "bg-white" : "hover:bg-maroon-50/70 bg-gray-100"}`}
                 >
                   <li className="font-semibold">{index + 1}</li>
                   <li className="flex items-center justify-center gap-2">
@@ -240,7 +240,7 @@ const Report = () => {
         )}
         {role === "FACULTY" && (
           <div className=" h-[94%] w-full overflow-auto">
-            <ul className="grid grid-cols-[60px_180px_140px_140px_140px] xl:grid-cols-5  px-4 py-3 xl:border-b xl:border-gray-500 font-bold text-center">
+            <ul className="grid grid-cols-[60px_180px_140px_140px_140px] xl:grid-cols-5  px-4 py-3   font-semibold rounded-lg border border-maroon-100 bg-maroon-50 text-maroon-800 text-center">
               {facultyReportHeaders.map((item, index) => (
                 <li key={index}>{item}</li>
               ))}

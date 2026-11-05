@@ -354,19 +354,19 @@ const FacultyModal = ({ open, setOpen }) => {
   return (
     <>
       {open && (
-        <div className="h-screen w-full bg-[#d8d3d382] absolute top-0 left-0 flex justify-center items-center ">
-          <div className="h-[80vh] p-5 w-[90%] xl:w-[40vw] bg-white shadow-2xl rounded-2xl overflow-hidden ">
+        <div className="h-screen w-full bg-maroon-900/40 backdrop-blur-[2px] absolute top-0 left-0 flex justify-center items-center ">
+          <div className="h-[80vh] p-5 w-[90%] xl:w-[40vw] bg-white shadow-2xl rounded-2xl border border-stone-200 overflow-hidden ">
             <div className="flex justify-end px-5">
               <span
-                className="cursor-pointer font-bold"
+                className="cursor-pointer rounded-full px-2.5 py-1 text-base leading-none text-slate-400 transition-colors hover:bg-maroon-50 hover:text-maroon-700"
                 onClick={() => setOpen(false)}
               >
-                x
+                ✕
               </span>
             </div>
 
             <div>
-              <h1 className="text-xl font-semibold mb-2">Faculty Attendance</h1>
+              <h1 className="text-xl font-semibold mb-3 text-maroon-800">Faculty Attendance</h1>
             </div>
 
             <div className="flex h-[90%] flex-col gap-5 [&>div]:flex [&>div]:flex-col [&>div]:gap-2 overflow-y-auto overflow-x-hidden">

@@ -10,8 +10,8 @@ const Attendance = () => {
     const [facOpen,setFacOpen] = useState(false)
   return (
       <>
-      <div className="h-[91%] rounded flex justify-center bg-white m-2 items-center flex-col pt-10">
-      {/* <div className="h-[91%] bg-white m-2 rounded flex flex-col overflow-hidden gap-5 p-4 py-6 flex-wrap "> */}
+      <div className="h-[91%] rounded-xl border border-stone-200 shadow-sm flex justify-center bg-white m-2 items-center flex-col pt-10">
+      {/* <div className="h-[91%] bg-white m-2 rounded-xl border border-stone-200 shadow-sm flex flex-col overflow-hidden gap-5 p-4 py-6 flex-wrap "> */}
 
 
         <h1 className='text-3xl font-bold'>Mark Attendance</h1>

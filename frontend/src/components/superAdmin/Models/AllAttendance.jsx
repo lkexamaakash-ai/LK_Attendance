@@ -383,8 +383,8 @@ const AllAttendance = ({
   return (
     <>
       {open && (
-        <div className="h-screen w-full bg-[#d8d3d382] absolute top-0 left-0 flex justify-center items-center">
-          <div className="h-[80vh] p-5 w-[90%] xl:w-[80vw] bg-white shadow-2xl rounded-2xl  ">
+        <div className="h-screen w-full bg-maroon-900/40 backdrop-blur-[2px] absolute top-0 left-0 flex justify-center items-center">
+          <div className="h-[80vh] p-5 w-[90%] xl:w-[80vw] bg-white shadow-2xl rounded-2xl border border-stone-200  ">
             <div className="flex justify-between px-5">
               <div className="">
                 {userdata.role === "FACULTY" && (
@@ -406,7 +406,7 @@ const AllAttendance = ({
                 )}
               </div>
               <span
-                className="cursor-pointer font-bold"
+                className="cursor-pointer rounded-full px-2.5 py-1 text-base leading-none text-slate-400 transition-colors hover:bg-maroon-50 hover:text-maroon-700"
                 onClick={() => {
                   setOpen(false);
                   setLecData([]);
@@ -414,7 +414,7 @@ const AllAttendance = ({
                   setServerData([]);
                 }}
               >
-                x
+                ✕
               </span>
             </div>
 

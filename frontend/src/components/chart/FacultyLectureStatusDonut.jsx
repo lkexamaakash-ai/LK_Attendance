@@ -5,8 +5,8 @@ import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 const COLORS = {
   conducted: "#16a34a",
   missed: "#dc2626",
-  cancelled: "#f97316",
-  remaining: "#2563eb",
+  cancelled: "#d6ac45",
+  remaining: "#8a2a3e",
 };
 
 const FacultyLectureStatusDonut = ({ data }) => {

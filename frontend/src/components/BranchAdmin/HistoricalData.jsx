@@ -144,7 +144,7 @@ const HistoricalData = () => {
   }, []);
   return (
     <>
-      <div className="h-[91%] bg-white m-2 rounded flex flex-col overflow-hidden gap-5 p-4 py-6 flex-wrap ">
+      <div className="h-[91%] bg-white m-2 rounded-xl border border-stone-200 shadow-sm flex flex-col overflow-hidden gap-5 p-4 py-6 flex-wrap ">
         <div className="w-full flex items-center justify-between">
           <div className="flex gap-2">
             <Select value={month} onValueChange={(v) => setMonth(v)}>
@@ -201,7 +201,7 @@ const HistoricalData = () => {
           </div>
           {/* <Button
             variant="secondary"
-            className={`bg-green-600 text-gray-200 hover:bg-green-700 cursor-pointer `}
+            className={`bg-maroon-700 text-white hover:bg-maroon-800 cursor-pointer `}
             onClick={() => {
               setOpen(true);
             }}
@@ -211,7 +211,7 @@ const HistoricalData = () => {
         </div>
         <div className="w-full h-[91%] overflow-y-auto overflow-x-auto xl:overflow-x-hidden pb-10">
           <ul
-            className={`grid grid-cols-[100px_180px_130px_220px_140px_140px_120px_100px_120px_100px]  xl:grid-cols-${list.length} px-4 py-3 xl:border-b xl:border-gray-500 font-bold text-center`}
+            className={`grid grid-cols-[100px_180px_130px_220px_140px_140px_120px_100px_120px_100px]  xl:grid-cols-${list.length} px-4 py-3   font-semibold rounded-lg border border-maroon-100 bg-maroon-50 text-maroon-800 text-center`}
           >
             {list.map((item, i) => (
               <li key={i}>{item}</li>
@@ -221,7 +221,7 @@ const HistoricalData = () => {
             Hdata.map((item, i) => (
               <ul
                 key={i}
-                className={`grid  grid-cols-[100px_180px_130px_220px_140px_140px_120px_100px_120px_100px] xl:grid-cols-${list.length} px-4 py-3 xl:border-b xl:border-gray-500 text-center items-center hover:bg-gray-50`}
+                className={`border-b border-stone-200 text-slate-700 transition-colors grid  grid-cols-[100px_180px_130px_220px_140px_140px_120px_100px_120px_100px] xl:grid-cols-${list.length} px-4 py-3   text-center items-center hover:bg-maroon-50/70`}
               >
                 <li>{formatDateYYYYDDMM(item.date)}</li>
                 <li>{item.session}</li>

@@ -1,4 +1,5 @@
 "use client";
+import EmptyState from "@/components/layout/EmptyState";
 import React, { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import Image from "next/image";
@@ -75,12 +76,12 @@ const UserManagement = () => {
 
   return (
     <>
-      <div className="h-[93.25%] relative bg-white m-2 rounded flex flex-col gap-5 p-4 pt-0 py-6 overflow-y-auto overflow-x-auto ">
+      <div className="h-[93.25%] relative bg-white m-2 rounded-xl border border-stone-200 shadow-sm flex flex-col gap-5 p-4 pt-0 py-6 overflow-y-auto overflow-x-auto ">
         <div className="sticky top-0 bg-white z-10 pt-6">
           <div className="w-full flex items-center justify-end">
             <Button
               variant="secondary"
-              className={`bg-green-600 text-gray-200 hover:bg-green-700 `}
+              className={`bg-maroon-700 text-white hover:bg-maroon-800 `}
               onClick={() => {
                 setOpen(true);
                 setType("add");
@@ -89,7 +90,7 @@ const UserManagement = () => {
               Add New User
             </Button>
           </div>
-          <ul className="grid grid-cols-[60px_180px_260px_220px_140px_140px_120px_100px] xl:grid-cols-8 w-full px-4 pt-3 xl:border-b xl:border-gray-500 font-bold text-center">
+          <ul className="grid grid-cols-[60px_180px_260px_220px_140px_140px_120px_100px] xl:grid-cols-8 w-full px-4 py-3 mt-3 rounded-lg border border-maroon-100 bg-maroon-50 text-maroon-800 font-semibold text-center">
             {lists.map((item, index) => (
               <li key={index}>{item}</li>
             ))}
@@ -107,17 +108,32 @@ const UserManagement = () => {
               return (
                 <ul
                   key={index}
-                  className={`grid grid-cols-[60px_180px_260px_220px_140px_140px_120px_100px] xl:grid-cols-8 px-4 py-3 xl:border-b xl:border-gray-500 text-center items-center hover:bg-gray-50 ${user.isActive ? "bg-white" : "bg-gray-100"}`}
+                  className={`grid grid-cols-[60px_180px_260px_220px_140px_140px_120px_100px] xl:grid-cols-8 px-4 py-3 border-b border-stone-200 text-center items-center text-slate-700 transition-colors hover:bg-maroon-50/70 ${user.isActive ? "bg-white" : "bg-gray-100"}`}
                 >
                   <li className="font-semibold">{index + 1}</li>
                   <li className="flex items-center justify-center gap-2">
                     {user.name}{" "}
-                    <div
-                      className={`${user.isActive ? "" : "bg-red-500  h-2 w-2 rounded-full "}`}
-                    ></div>
+                    {!user.isActive && (
+                      <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">
+                        Inactive
+                      </span>
+                    )}
                   </li>
                   <li>{user.phoneNumber}</li>
-                  <li>{formatRole(user.role)}</li>
+                  <li>
+                    <span
+                      className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ring-1 ${
+                        {
+                          SUPER_ADMIN: "bg-gold-100 text-gold-600 ring-gold-200",
+                          BRANCH_ADMIN: "bg-maroon-50 text-maroon-700 ring-maroon-100",
+                          FACULTY: "bg-slate-100 text-slate-700 ring-slate-200",
+                          STAFF: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+                        }[user.role] || "bg-slate-100 text-slate-700 ring-slate-200"
+                      }`}
+                    >
+                      {formatRole(user.role)}
+                    </span>
+                  </li>
                   {/* <li>{user.branch?.name || "-"}</li> */}
                   <li className=" min-w-0 wrap-break-word whitespace-normal">
                     {user.role === "FACULTY" ? user.branchId == null ? (
@@ -171,7 +187,7 @@ const UserManagement = () => {
             })
           ) : (
             <div className="h-[50vh] flex justify-center items-center">
-              <p className="text-center my-5 text-xl">No Users</p>
+              <EmptyState message="No Users" />
             </div>
           )}
         </div>

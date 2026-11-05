@@ -1,4 +1,6 @@
 "use client";
+import StatCard from "../layout/StatCard";
+import { Building2, CalendarCheck, CalendarDays, Clock, LogIn, LogOut, Timer, Wallet } from "lucide-react";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { Button } from "../ui/button";
@@ -140,82 +142,69 @@ const StaffMain = () => {
 
   return (
     <>
-      <div className="h-screen bg-white m-2 rounded flex flex-col overflow-hidden">
+      <div className="h-screen bg-white m-2 rounded-xl border border-stone-200 shadow-sm flex flex-col overflow-hidden">
         <div className="px-5 py-2 flex justify-between shrink-0">
-          <h1 className="font-bold text-2xl">Welcome 👋</h1>
+          <h1 className="font-semibold text-2xl text-maroon-800">Welcome 👋</h1>
         </div>
 
         <div className="w-full xl:w-[98%] flex-1 mx-auto flex flex-col gap-4 overflow-auto xl:overflow-hidden px-1">
-          {/* <div className="flex flex-col xl:grid xl:grid-cols-4 gap-3 w-full [&>div]:rounded overflow-auto [&>div]:shadow-lg grid-rows-1 h-[20vh] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:items-center [&>div>h1]:text-2xl [&>div>h1]:font-semibold [&>div>h1]:uppercase [&>div>p]:text-lg [&>div>p]:font-medium [&>div>p]:text-gray-600 [&>div>h1]:text-gray-800 [&>div]:border "> */}
-          <div className="flex flex-col xl:grid xl:grid-cols-4 gap-3 w-full [&>div]:rounded [&>div]:shadow-lg xl:grid-rows-1 xl:h-[20vh] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:items-center xl:[&>div>h1]:text-2xl [&>div>h1]:font-semibold [&>div>h1]:uppercase xl:[&>div>p]:text-lg [&>div>p]:font-medium [&>div>p]:text-gray-600 [&>div>h1]:text-gray-800 [&>div]:border">
-            <div className="bg-gray-200 w-full h-full  ">
-              <h1>Date Of Joined</h1>
-              <p>{formatDate(staffData?.createdAt)}</p>
-            </div>
+          {/* <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"> */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard label="Date Of Joined" icon={CalendarDays} tone="slate">
+              {formatDate(staffData?.createdAt)}
+            </StatCard>
 
-            <div className="bg-gray-200 w-full h-full  ">
-              <h1>InTime</h1>
-              <p>{formatTime(staffData?.shiftStartTime)}</p>
-            </div>
+            <StatCard label="InTime" icon={LogIn}>
+              {formatTime(staffData?.shiftStartTime)}
+            </StatCard>
 
-            <div className="bg-gray-200 w-full h-full  ">
-              <h1>OutTime</h1>
-              <p>{formatTime(staffData?.shiftEndTime)}</p>
-            </div>
+            <StatCard label="OutTime" icon={LogOut}>
+              {formatTime(staffData?.shiftEndTime)}
+            </StatCard>
 
-            <div className="bg-gray-200 w-full h-full  ">
-              <h1>Today OverTime Pay</h1>
-              <p>₹{todayAtt?.overtimePay || 0}</p>
-            </div>
+            <StatCard label="Today OverTime Pay" icon={Wallet} tone="green">
+              ₹{todayAtt?.overtimePay || 0}
+            </StatCard>
           </div>
 
-          {/* <div className="flex flex-col xl:grid xl:grid-cols-4 gap-3 w-full [&>div]:rounded [&>div]:shadow-lg grid-rows-1 h-[20vh] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:items-center [&>div>h1]:text-2xl [&>div>h1]:font-semibold [&>div>h1]:uppercase [&>div>p]:text-lg [&>div>p]:font-medium [&>div>p]:text-gray-600 [&>div>h1]:text-gray-800 [&>div]:border "> */}
-          <div className="flex flex-col xl:grid xl:grid-cols-4 gap-3 w-full [&>div]:rounded [&>div]:shadow-lg xl:grid-rows-1 xl:h-[20vh] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:items-center xl:[&>div>h1]:text-2xl [&>div>h1]:font-semibold [&>div>h1]:uppercase xl:[&>div>p]:text-lg [&>div>p]:font-medium [&>div>p]:text-gray-600 [&>div>h1]:text-gray-800 [&>div]:border">
-            <div className="bg-gray-200 w-full h-full  ">
-              <h1>Days Present</h1>
-              <p>{staffData?.staffAttendances?.length || 0}</p>
-            </div>
+          {/* <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"> */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard label="Days Present" icon={CalendarCheck}>
+              {staffData?.staffAttendances?.length || 0}
+            </StatCard>
 
-            {/* <div className="bg-gray-200 w-full h-full  ">
-              <h1>Days Absent</h1>
-              <p>2</p>
-            </div> */}
+            {/* <StatCard label="Days Absent" icon={CalendarDays}>
+              2
+            </StatCard> */}
 
-            <div className="bg-gray-200 w-full h-full  ">
-              <h1>Late Days</h1>
-              <p>
-                {staffData?.staffAttendances?.filter((att) => att.isLate)
+            <StatCard label="Late Days" icon={Clock} tone="red">
+              {staffData?.staffAttendances?.filter((att) => att.isLate)
                   .length || 0}
-              </p>
-            </div>
+            </StatCard>
 
-            <div className="bg-gray-200 w-full h-full  ">
-              <h1>OverTime(This month)</h1>
-              <p>
-                {overtime > 60
+            <StatCard label="OverTime(This month)" icon={Timer} tone="gold">
+              {overtime > 60
                   ? `${(overtime / 60).toFixed(2)}Hrs`
                   : `${overtime}min`}{" "}
-              </p>
-            </div>
+            </StatCard>
 
-            <div className="bg-gray-200 w-full h-full  ">
-              <h1>Branch</h1>
-              <p>{staffData.branch?.name}</p>
-            </div>
+            <StatCard label="Branch" icon={Building2} tone="slate">
+              {staffData.branch?.name}
+            </StatCard>
           </div>
 
           <div className="flex flex-wrap gap-3 [&>div]:border ">
-            <div className="w-full h-[30vh] xl:h-[40vh] bg-gray-100 rounded m-1 shadow-lg p-2 overflow-hidden ">
-              <h1 className="text-xl font-semibold">Recent Attendance</h1>
+            <div className="w-full h-[30vh] xl:h-[40vh] bg-white rounded-xl border border-stone-200 shadow-sm p-4 overflow-hidden ">
+              <h1 className="mb-3 text-lg font-semibold text-slate-900">Recent Attendance</h1>
               <div className="w-full h-full overflow-auto [&>ul]:grid [&>ul]:grid-cols-[100px_180px_260px_220px_140px_140px_150px] xl:[&>ul]:grid-cols-6 flex flex-col [&>ul]:gap-10  mt-5 [&>ul]:text-center ">
-                <ul className="font-bold mb-5">
+                <ul className="mb-3 rounded-lg border border-maroon-100 bg-maroon-50 px-2 py-2 font-semibold text-maroon-800">
                   {recentAtt.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
                 </ul>
                 {recentAttendance.map((item, i) => {
                   return (
-                    <ul key={i} className="xl:bg-[#ffffff] my-1 rounded p-1">
+                    <ul key={i} className="my-1 border-b border-stone-100 p-1 px-2 text-slate-700">
                       <li className="">{item.date}</li>
                       <li>{item.in}</li>
                       <li>{item.out}</li>

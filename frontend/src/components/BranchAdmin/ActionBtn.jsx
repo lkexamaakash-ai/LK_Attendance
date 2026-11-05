@@ -1,18 +1,19 @@
 "use client";
 import React, { useState } from "react";
-import { Button } from "../ui/button";
-import { MoreVertical, TimerReset } from "lucide-react";
+import { MoreVertical, Pencil, TimerReset, Trash2 } from "lucide-react";
 
-const ActionBtn = ({ op, setOp, type, setType, lecu, setlecture,need,setReset }) => {
+const itemClass =
+  "flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-maroon-50 hover:text-maroon-800";
+
+const ActionBtn = ({ op, setOp, type, setType, lecu, setlecture, need, setReset }) => {
   const [open, setOpen] = useState(false);
-  
 
   const handleEdit = () => {
     setlecture(lecu);
     setOp(true);
     setType("edit");
     setOpen(false);
-    setReset(false)
+    setReset(false);
   };
 
   const handleDelete = () => {
@@ -24,21 +25,19 @@ const ActionBtn = ({ op, setOp, type, setType, lecu, setlecture,need,setReset })
   return (
     <>
       <div className="relative">
-        <Button
+        <button
           onClick={() => setOpen(!open)}
-          className={`p-2 rounded hover:bg-gray-600`}
+          aria-label="Actions"
+          className="cursor-pointer rounded-lg p-2 text-slate-500 transition-colors hover:bg-maroon-50 hover:text-maroon-700"
         >
           <MoreVertical size={16} />
-        </Button>
+        </button>
 
         {open && (
-          <div className="absolute right-0 mt-2 w-32 bg-white border rounded shadow-md z-50 [&>Button]:cursor-pointer ">
-            <Button
-              className={`flex w-full px-3 py-2 text-sm  rounded-none bg-white hover:text-gray-500 text-gray-700 hover:bg-gray-100`}
-              onClick={handleEdit}
-            >
-              ✏️ Edit
-            </Button>
+          <div className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-lg border border-stone-200 bg-white py-1 text-left shadow-lg">
+            <button onClick={handleEdit} className={itemClass}>
+              <Pencil size={15} /> Edit
+            </button>
 
             {need && (
               <button
@@ -50,20 +49,18 @@ const ActionBtn = ({ op, setOp, type, setType, lecu, setlecture,need,setReset })
                   setOp(true);
                   setReset(true);
                 }}
-                className="flex justify-center items-center w-full px-3 py-2 text-sm hover:bg-gray-100"
+                className={itemClass}
               >
-                <TimerReset size={20} />
-                Reset
+                <TimerReset size={15} /> Reset
               </button>
             )}
 
-            <Button
+            <button
               onClick={handleDelete}
-              variant="destructive"
-              className={`flex w-full px-3 py-2 text-sm rounded-none hover:bg-red-700  `}
+              className="flex w-full items-center gap-2 border-t border-stone-100 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
             >
-              🗑️ Delete
-            </Button>
+              <Trash2 size={15} /> Delete
+            </button>
           </div>
         )}
       </div>

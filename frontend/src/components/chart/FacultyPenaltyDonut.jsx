@@ -4,8 +4,8 @@ import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 
 const COLORS = {
   late: "#dc2626",
-  early: "#f97316",
-  both: "#7c3aed",
+  early: "#d6ac45",
+  both: "#c0922f",
 };
 
 const FacultyPenaltyDonut = ({ data }) => {

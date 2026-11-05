@@ -1,4 +1,6 @@
 "use client";
+import StatCard from "../layout/StatCard";
+import { Hourglass, Presentation, TriangleAlert, Wallet } from "lucide-react";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { Button } from "../ui/button";
@@ -256,57 +258,50 @@ const FacMain = () => {
 
   return (
     <>
-      <div className="h-full bg-white m-2 rounded flex flex-col overflow-hidden">
+      <div className="h-full bg-white m-2 rounded-xl border border-stone-200 shadow-sm flex flex-col overflow-hidden">
         <div className="px-5 py-2 flex justify-between">
-          <h1 className="font-bold text-2xl">Welcome 👋</h1>
+          <h1 className="font-semibold text-2xl text-maroon-800">Welcome 👋</h1>
         </div>
 
         <div className="w-[98%] xl:h-[92%]  mx-auto flex flex-col gap-4 overflow-auto xl:overflow-hidden">
-          <div className="flex flex-wrap justify-center h-[20vh] xl:grid xl:grid-cols-4 gap-3 xl:w-full [&>div]:rounded [&>div]:shadow-lg xl:grid-rows-1 xl:h-[20vh] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:items-center [&>div>h1]:text-lg xl:[&>div>h1]:text-2xl [&>div>h1]:font-semibold [&>div>h1]:uppercase [&>div>p]:text-sm xl:[&>div>p]:text-lg [&>div>p]:font-medium [&>div>p]:text-gray-600  [&>div>h1]:text-gray-800 [&>div]:border ">
-            <div className="bg-gray-200 w-[23%] p-2 xl:p-2 xl:w-full xl:h-full  ">
-              <h1>Total Lectures</h1>
-
-              <p>{totalConductedThisMonth}</p>
-
-              <span className="text-xs text-gray-500">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard label="Total Lectures" icon={Presentation}>
+              {totalConductedThisMonth}
+              <span className="block text-xs font-normal text-slate-500">
                 {monlist[currentMonth]} {currentYear}
               </span>
-            </div>
+            </StatCard>
 
-            <div className="bg-gray-200 p-2 w-[23%] xl:p-2 xl:w-full xl:h-full  ">
-              <h1>Remaining Lecture</h1>
-              <p>{remainingThisMonth}</p>
-              <span className="text-xs text-gray-500">
+            <StatCard label="Remaining Lecture" icon={Hourglass} tone="gold">
+              {remainingThisMonth}
+              <span className="block text-xs font-normal text-slate-500">
                 {monlist[currentMonth]} {currentYear}
               </span>
-            </div>
+            </StatCard>
 
-            <div className="bg-gray-200 p-2 w-[23%] xl:p-2 xl:w-full xl:h-full  ">
-              <h1>Total Penalties</h1>
-              <p>{penaltiesThisMonth}</p>
-
-              <span className="text-xs text-gray-500">
+            <StatCard label="Total Penalties" icon={TriangleAlert} tone="red">
+              {penaltiesThisMonth}
+              <span className="block text-xs font-normal text-slate-500">
                 {monlist[currentMonth]} {currentYear}
               </span>
-            </div>
+            </StatCard>
 
-            <div className="bg-gray-200 w-[23%] p-2 xl:p-2 xl:w-full xl:h-full  ">
-              <h1>Salary</h1>
-              <p className="flex">
+            <StatCard label="Salary" icon={Wallet} tone="green">
+              <span className="flex items-baseline gap-1">
                 ₹
                 {faculty?.facultyType === "LECTURE_BASED" ? (
                   <>
                     {faculty.lectureRate}{" "}
-                    <span className="text-[10px] mt-1">Per Lecture</span>
+                    <span className="text-xs font-normal text-slate-500">Per Lecture</span>
                   </>
                 ) : (
                   <>
                     {faculty.salary}{" "}
-                    <span className="text-[10px] mt-1">Per Month</span>
+                    <span className="text-xs font-normal text-slate-500">Per Month</span>
                   </>
                 )}
-              </p>
-            </div>
+              </span>
+            </StatCard>
           </div>
 
           <div className="flex xl:flex-wrap flex-col xl:flex-row gap-3 [&>div]:border ">
@@ -328,7 +323,7 @@ const FacMain = () => {
               </div>
             </div> */}
 
-            <div className="xl:w-full h-[50vh] bg-gray-100 rounded m-1 shadow-lg overflow-hidden p-2">
+            <div className="xl:w-full min-h-[50vh] bg-white rounded-xl border border-stone-200 shadow-sm p-4">
               {/* <h1 className="text-xl font-semibold">
                 Lecture History (Last 5 Lectures)
               </h1>
@@ -378,7 +373,7 @@ const FacMain = () => {
                     <FacultyLectureStatusDonut data={chartData} />
                     <FacultyPenaltyDonut data={chartData} />
                   </div>
-                  <h3 className="text-xl font-semibold mt-4 text-green-600">
+                  <h3 className="text-xl font-semibold mt-4 text-emerald-600">
                     Total Payout: ₹{chartData.totalPayout}
                   </h3>
                 </>

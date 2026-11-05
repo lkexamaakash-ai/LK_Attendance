@@ -262,7 +262,7 @@ const StaffSalary = () => {
 
   return (
     <>
-      <div className="h-full bg-white m-2 gap-2 rounded flex flex-col overflow-hidden p-5">
+      <div className="h-full bg-white m-2 gap-2 rounded-xl border border-stone-200 shadow-sm flex flex-col overflow-hidden p-5">
         {/* Filters */}
         <div className="w-full flex justify-end p-2 gap-2">
           <Label htmlFor="month" className="uppercase">

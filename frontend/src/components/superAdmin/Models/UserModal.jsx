@@ -231,16 +231,19 @@ const UserModal = ({ open, setOpen, type, user, refetch }) => {
   return (
     <>
       {open && (
-        <div className="h-screen z-20 w-full bg-[#d8d3d382] absolute top-0 left-0 flex justify-center items-center">
-          <div className="h-auto p-5 w-[80%] xl:w-[40vw]  bg-white shadow-2xl rounded-2xl  ">
+        <div className="h-screen z-20 w-full bg-maroon-900/40 backdrop-blur-[2px] absolute top-0 left-0 flex justify-center items-center">
+          <div className="h-auto p-5 w-[80%] xl:w-[40vw]  bg-white shadow-2xl rounded-2xl border border-stone-200  ">
             <div className="flex justify-end px-5">
               <span
-                className="cursor-pointer font-bold"
+                className="cursor-pointer rounded-full px-2.5 py-1 text-base leading-none text-slate-400 transition-colors hover:bg-maroon-50 hover:text-maroon-700"
                 onClick={() => setOpen(false)}
               >
-                x
+                ✕
               </span>
             </div>
+            <h2 className="px-5 pb-3 text-xl font-semibold text-maroon-800">
+              {{ add: "Add", create: "Create", assign: "Assign", edit: "Edit", delete: "Delete" }[type] || ""} User
+            </h2>
 
             {type === "add" && (
               <div className="flex flex-col gap-5 [&>div]:w-full [&>div]:flex [&>div]:flex-col [&>div]:gap-2 ">

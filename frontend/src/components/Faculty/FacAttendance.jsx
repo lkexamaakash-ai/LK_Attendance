@@ -278,7 +278,7 @@ const FacAttendance = () => {
 
   return (
     <>
-      <div className="h-full bg-white m-2 rounded flex flex-col overflow-hidden items-center">
+      <div className="h-full bg-white m-2 rounded-xl border border-stone-200 shadow-sm flex flex-col overflow-hidden items-center">
         <div className="w-full flex items-center justify-between p-3">
           {/* LEFT - Month & Year */}
           <div className="flex items-center gap-3">

@@ -15,7 +15,7 @@ const FacultyAttendanceBar = ({ data }) => {
       <BarChart width={260} height={200} data={chartData}>
         <XAxis dataKey="name" />
         <Tooltip />
-        <Bar dataKey="value" fill="#2563eb" />
+        <Bar dataKey="value" fill="#8a2a3e" />
       </BarChart>
     </div>
   );

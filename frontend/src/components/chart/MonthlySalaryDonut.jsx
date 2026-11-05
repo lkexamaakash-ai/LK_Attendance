@@ -5,8 +5,8 @@ import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 const COLORS = {
   net: "#16a34a", // green
   late: "#dc2626", // red
-  extra: "#f97316", // orange
-  overtime: "#2563eb", // blue
+  extra: "#d6ac45", // orange
+  overtime: "#8a2a3e", // blue
 };
 
 const MonthlySalaryDonut = ({ data }) => {

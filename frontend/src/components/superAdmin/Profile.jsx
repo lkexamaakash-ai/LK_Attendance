@@ -52,7 +52,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="h-full p-3 bg-white m-2 rounded flex flex-col overflow-hidden gap-5 [&>div]:p-5 [&>div]:rounded [&>div]:shadow-lg  [&>div]:bg-gray-100 [&>div>h1]:text-3xl [&>div>h1]:font-semibold [&>div>ul]:pl-10 [&>div>ul]:my-5 [&>div>ul>li]:font-bold  [&>div>ul>li>span]:font-normal  ">
+    <div className="h-full p-3 bg-white m-2 rounded-xl border border-stone-200 shadow-sm flex flex-col overflow-hidden gap-5 [&>div]:p-5 [&>div]:rounded [&>div]:shadow-lg  [&>div]:bg-gray-100 [&>div>h1]:text-3xl [&>div>h1]:font-semibold [&>div>ul]:pl-10 [&>div>ul]:my-5 [&>div>ul>li]:font-bold  [&>div>ul>li>span]:font-normal  ">
       <div className="">
         <h1>Personal Information</h1>
         <ul>

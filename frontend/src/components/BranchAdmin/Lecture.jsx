@@ -54,10 +54,10 @@ const Lecture = () => {
 
   return (
     <>
-      <div className="h-[91%] rounded bg-white m-2  p-4 py-2 flex flex-wrap gap-5 flex-col items-center">
+      <div className="h-[91%] rounded-xl border border-stone-200 shadow-sm bg-white m-2  p-4 py-2 flex flex-wrap gap-5 flex-col items-center">
         <div className="w-full flex justify-end">
           <Button
-            className={`cursor-pointer bg-green-600 text-gray-200 hover:text-gray-100 hover:bg-green-700 `}
+            className={`cursor-pointer bg-maroon-700 text-white hover:bg-maroon-800 `}
             onClick={() => {
               setCreateOpen(true);
               setType("create");
@@ -68,7 +68,7 @@ const Lecture = () => {
         </div>
 
         <div className="w-full h-[91%] overflow-auto">
-          <ul className="grid grid-cols-[100px_250px_150px_150px_140px_140px_160px_140px] xl:grid-cols-8  px-4 py-3 xl:border-b border-gray-500 font-bold text-center">
+          <ul className="grid grid-cols-[100px_250px_150px_150px_140px_140px_160px_140px] xl:grid-cols-8  px-4 py-3 xl:border border-maroon-100 bg-maroon-50 text-maroon-800 rounded-lg font-semibold text-center">
             {branchLectureHeaders.map((item, i) => (
               <li key={i}>{item}</li>
             ))}
@@ -77,7 +77,7 @@ const Lecture = () => {
           {branchLectureData.map((lec, index) => (
             <ul
               key={index}
-              className={`grid grid-cols-[100px_250px_150px_150px_140px_140px_160px_140px] xl:grid-cols-8 px-4 py-3 xl:border-b border-gray-500 text-center items-center text-wrap hover:bg-gray-50`}
+              className={`grid grid-cols-[100px_250px_150px_150px_140px_140px_160px_140px] xl:grid-cols-8 px-4 py-3 xl:border-b border-stone-200 text-center items-center text-wrap text-slate-700 transition-colors hover:bg-maroon-50/70`}
             >
               <li>{lec.StartDate.split("T")[0]}</li>
               <li>{lec.EndDate.split("T")[0]}</li>

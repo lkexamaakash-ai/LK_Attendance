@@ -79,18 +79,18 @@ const SelectBranchModels = ({ open, setOpen, userdata,list ,currentMon }) => {
       {open && (
         <div
           onClick={() => setOpen(false)}
-          className="h-screen w-full bg-[#d8d3d382] absolute top-0 left-0 flex justify-center items-center"
+          className="h-screen w-full bg-maroon-900/40 backdrop-blur-[2px] absolute top-0 left-0 flex justify-center items-center"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="z-10 min-h-[50vh] max-h-[70vh] p-5 xl:w-[35vw] w-[90%] bg-white shadow-2xl rounded-2xl overflow-hidden "
+            className="z-10 min-h-[50vh] max-h-[70vh] p-5 xl:w-[35vw] w-[90%] bg-white shadow-2xl rounded-2xl border border-stone-200 overflow-hidden "
           >
             <div className="flex justify-end px-5">
               <span
-                className="cursor-pointer font-bold"
+                className="cursor-pointer rounded-full px-2.5 py-1 text-base leading-none text-slate-400 transition-colors hover:bg-maroon-50 hover:text-maroon-700"
                 onClick={() => setOpen(false)}
               >
-                x
+                ✕
               </span>
             </div>
             <h1 className="font-semibold uppercase">
@@ -138,7 +138,7 @@ const SelectBranchModels = ({ open, setOpen, userdata,list ,currentMon }) => {
 
               <Button
               onClick={handleLectureBasedFacultySendWhatsappMsg}
-                className={`w-full mt-5 cursor-pointer bg-green-500 hover:bg-green-600 mx-auto`}
+                className={`w-full mt-5 cursor-pointer bg-maroon-700 text-white hover:bg-maroon-800 mx-auto`}
               >
                 <Image
                   src={"/whatsapp.png"}
