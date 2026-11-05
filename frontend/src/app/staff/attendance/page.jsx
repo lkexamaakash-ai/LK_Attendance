@@ -8,7 +8,7 @@ import React, { useState } from "react";
 const page = () => {
   const [open,setOpen] = useState(false)
   return (
-    <div className="h-screen w-full bg-gray-200 xl:flex items-center">
+    <div className="h-screen w-full bg-app xl:flex items-center">
       <StaffNavbar open={open} setOpen={setOpen} />
       <div className="flex h-full flex-col xl:w-[85vw] overflow-hidden ">
         <StaffHeader setOpen={setOpen} title={`My Attendance`} user={`Navneet`} />

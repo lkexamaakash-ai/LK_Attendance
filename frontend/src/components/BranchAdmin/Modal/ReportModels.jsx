@@ -328,7 +328,7 @@ const ReportModels = ({ open, setOpen, user, setUser }) => {
                 onClick={() => {
                   setOpn(true);
                 }}
-                className={`w-1/2 mt-5 cursor-pointer bg-[#be6b66] hover:bg-[#a85e5ae1]`}
+                className={`w-1/2 mt-5 cursor-pointer bg-[#8a2a3e] hover:bg-[#a85e5ae1]`}
               >
                 Attendance
               </Button>

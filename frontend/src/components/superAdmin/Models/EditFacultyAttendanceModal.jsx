@@ -297,7 +297,7 @@ const EditFacultyAttendanceModal = ({ open, setOpen, attId, setUpd, upd }) => {
                       {lectList.map((item, index) => (
                         <div
                           key={index}
-                          className="flex flex-wrap gap-2 items-center justify-center text-sm bg-[#be6b66] text-white p-1 rounded "
+                          className="flex flex-wrap gap-2 items-center justify-center text-sm bg-[#8a2a3e] text-white p-1 rounded "
                         >
                           {`${item?.subject?.name}-${item?.batch?.name}-${item?.batch?.course?.name}-${item?.batch?.course?.branch?.name}`}
                           <div

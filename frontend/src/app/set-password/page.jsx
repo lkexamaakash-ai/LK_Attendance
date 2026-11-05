@@ -1,5 +1,6 @@
 "use client";
 import { mainRoute } from "@/components/apiroute";
+import AuthShell from "@/components/layout/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
@@ -24,7 +25,8 @@ const SetPassword = () => {
     }
   }, [router]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault();
     if (newPassword.length < 6) {
       toast.error("Password must be at least 6 characters long");
       return;
@@ -63,51 +65,56 @@ const SetPassword = () => {
   };
 
   return (
-    <div className="h-screen w-full flex justify-center items-center bg-gray-100">
-      <div className="bg-white rounded-2xl shadow-2xl w-[90%] lg:w-[35%] py-10 flex flex-col items-center">
-        <img src="/Header.jpg" alt="" className="h-20" />
-        <div className="flex flex-col gap-3 w-[90%] mt-10">
-          <h1 className="text-center text-2xl mb-2 font-semibold">
-            Set Your Password
-          </h1>
-          <p className="text-center text-sm text-gray-600 mb-5">
-            You are using the default password. Please choose a new password to
-            continue.
-          </p>
-
+    <AuthShell
+      title="Set your password"
+      subtitle="You are using the default password. Choose a new one to continue."
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
+            New password
+          </label>
           <div className="relative">
             <Input
               type={showPass ? "text" : "password"}
-              placeholder="New Password"
+              className="h-11 pr-11"
+              placeholder="At least 6 characters"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
             />
-            <Button
+            <button
+              type="button"
               onClick={() => setShowPass(!showPass)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black bg-transparent hover:bg-transparent"
+              aria-label={showPass ? "Hide password" : "Show password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-maroon-700"
             >
-              {!showPass ? <Eye size={10} /> : <EyeOff size={10} />}
-            </Button>
+              {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
+        </div>
 
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
+            Confirm new password
+          </label>
           <Input
             type={showPass ? "text" : "password"}
-            placeholder="Confirm New Password"
+            className="h-11"
+            placeholder="Re-enter the new password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
-
-          <Button
-            variant="secondary"
-            onClick={handleSubmit}
-            disabled={loading}
-            className="cursor-pointer my-5"
-          >
-            {loading ? "Saving..." : "Set Password"}
-          </Button>
         </div>
-      </div>
-    </div>
+
+        <Button
+          type="submit"
+          disabled={loading}
+          className="mt-2 h-11 w-full cursor-pointer text-base"
+        >
+          {loading ? "Saving..." : "Set password"}
+        </Button>
+      </form>
+    </AuthShell>
   );
 };
 

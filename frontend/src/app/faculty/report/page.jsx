@@ -4,7 +4,7 @@ import React from 'react'
 
 const page = () => {
   return (
-    <div className='h-screen w-full overflow-hidden bg-gray-200 flex'>
+    <div className='h-screen w-full overflow-hidden bg-app flex'>
         <FacNavbar />
         <div className="flex flex-col w-[85vw]">
             <FacHeader title={"Report"} user={`Navneet`} />

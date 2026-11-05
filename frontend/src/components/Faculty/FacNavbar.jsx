@@ -1,100 +1,16 @@
 "use client";
-import Image from "next/image";
-import React from "react";
-import { redirect, usePathname } from "next/navigation";
-import Link from "next/link";
-import { Button } from "../ui/button";
+import { LayoutDashboard, CalendarCheck, BookMarked, CircleUser } from "lucide-react";
+import AppSidebar from "../layout/AppSidebar";
 
-const FacNavbar = ({ open, setOpen }) => {
-  // const lists = ["Dashboard","My Lecture","Attendance","Report","Profile"]
+const items = [
+  { name: "Dashboard", link: "/faculty", icon: LayoutDashboard },
+  { name: "Attendance", link: "/faculty/attendance", icon: CalendarCheck },
+  { name: "My Subject & Batches", link: "/faculty/lecture", icon: BookMarked },
+  { name: "Profile", link: "/faculty/profile", icon: CircleUser },
+];
 
-  const pathname = usePathname();
-
-  const lists = [
-    {
-      name: "Dashboard",
-      icon: "",
-      link: "/faculty",
-    },
-    // {
-    //   name:"Lecture History",
-    //   icon:"",
-    //   link:"#"
-    // },
-    {
-      name: "Attendance",
-      icon: "",
-      link: "/faculty/attendance",
-    },
-    // {
-    //   name:"Earnings",
-    //   icon:"",
-    //   link:"#"
-    // },
-    // {
-    //   name:"Penalties & Exceptions",
-    //   icon:"",
-    //   link:"#"
-    // },
-    {
-      name: "My Subject & Batches",
-      icon: "",
-      link: "/faculty/lecture",
-    },
-    {
-      name: "Profile",
-      icon: "",
-      link: "/faculty/profile",
-    },
-  ];
-
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    redirect("/");
-  };
-
-  return (
-    <nav
-      className={`bg-white xl:flex xl:flex-col relative h-full overflow-hidden ${
-        open ? "flex flex-col" : "hidden"
-      } xl:w-[15vw] py-6 rounded-r-lg `}
-    >
-      <div className="flex items-center justify-between">
-        <Image alt="logo" src={"/Header.jpg"} height={200} width={200} />
-        <p
-          onClick={() => setOpen(false)}
-          className="pr-10 font-bold text-3xl cursor-pointer xl:hidden"
-        >
-          X
-        </p>
-      </div>
-      <div className="">
-        <ul className="relative pl-2">
-          {lists.map((item, index) => (
-            <li
-              key={index}
-              className={`cursor-pointer text-lg my-5 py-2 pl-2 rounded-l-full ${
-                pathname === item.link
-                  ? "text-white bg-[#be6b66] w-full navbar"
-                  : "text-black"
-              }`}
-            >
-              <Link href={`${item.link}`}>{item.name}</Link>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="w-full p-2 absolute bottom-0 left-0">
-        <Button
-          onClick={handleLogout}
-          className={`w-full cursor-pointer bg-[#be6b66]`}
-        >
-          LogOut
-        </Button>
-      </div>
-    </nav>
-  );
-};
+const FacNavbar = ({ open, setOpen }) => (
+  <AppSidebar items={items} open={open} setOpen={setOpen} roleLabel="Faculty" />
+);
 
 export default FacNavbar;
