@@ -165,3 +165,9 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #000;
 }
+
+/* Read-only fields (calculated values) look different from editable ones */
+input[readonly] {
+  background-color: #faf8f7;
+  color: #475569;
+}

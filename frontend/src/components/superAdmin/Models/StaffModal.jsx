@@ -261,8 +261,12 @@ const StaffModal = ({ open, setOpen }) => {
     <>
       {open && (
         <div className="h-screen w-full bg-maroon-900/40 backdrop-blur-[2px] absolute top-0 left-0 flex justify-center items-center overflow-hidden">
-          <div className="h-[80vh]  p-5 xl:w-[40vw] w-[90%] bg-white shadow-2xl rounded-2xl border border-stone-200 overflow-hidden ">
-            <div className="flex justify-end px-5">
+          <div className="flex max-h-[88vh] w-[92%] flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-2xl xl:w-[42vw] xl:max-w-2xl">
+            <div className="flex items-start justify-between border-b border-stone-100 px-6 py-4">
+              <div>
+                <h1 className="text-xl font-semibold text-maroon-800">Staff Attendance</h1>
+                <p className="mt-0.5 text-xs text-slate-500">Record in and out time, late entry and overtime.</p>
+              </div>
               <span
                 className="cursor-pointer rounded-full px-2.5 py-1 text-base leading-none text-slate-400 transition-colors hover:bg-maroon-50 hover:text-maroon-700"
                 onClick={() => setOpen(false)}
@@ -270,11 +274,8 @@ const StaffModal = ({ open, setOpen }) => {
                 ✕
               </span>
             </div>
-            <div>
-              <h1 className="text-xl font-semibold mb-3 text-maroon-800">Staff Attendance</h1>
-            </div>
 
-            <div className="flex h-[90%] flex-col gap-5 [&>div]:flex [&>div]:flex-col [&>div]:gap-2 overflow-y-auto overflow-x-hidden">
+            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-6 pt-5 pb-0 [&>div]:flex [&>div]:flex-col [&>div]:gap-1.5">
               <div>
                 <Label>Date</Label>
                 <Input
@@ -332,8 +333,8 @@ const StaffModal = ({ open, setOpen }) => {
               </div>
               {status === "PRESENT" && (
                 <>
-                  <div>
-                    <div>
+                  <div className="grid! grid-cols-2! gap-3!">
+                    <div className="flex flex-col gap-1.5">
                       <Label>Shift In Time</Label>
                       <Input
                         type={`text`}
@@ -341,7 +342,7 @@ const StaffModal = ({ open, setOpen }) => {
                         value={formatTime(startTime)}
                       />
                     </div>
-                    <div>
+                    <div className="flex flex-col gap-1.5">
                       <Label>Shift Out Time</Label>
                       <Input
                         type={`text`}
@@ -351,15 +352,15 @@ const StaffModal = ({ open, setOpen }) => {
                     </div>
                   </div>
 
-                  <div>
-                    <div>
+                  <div className="grid! grid-cols-2! gap-3!">
+                    <div className="flex flex-col gap-1.5">
                       <Label>In Time</Label>
                       <Input
                         type={`time`}
                         onChange={(e) => setActualInTime(e.target.value)}
                       />
                     </div>
-                    <div>
+                    <div className="flex flex-col gap-1.5">
                       <Label>Out Time</Label>
                       <Input
                         type={`time`}
@@ -372,7 +373,7 @@ const StaffModal = ({ open, setOpen }) => {
                     <Label>Late Entry</Label>
                     <Input
                       type={`text`}
-                      value={`${staffPreview?.lateEntry}`}
+                      value={staffPreview?.lateEntry === undefined || staffPreview?.lateEntry === null ? "-" : String(staffPreview.lateEntry)}
                       placeholder={`Yes/No`}
                       readOnly
                     />
@@ -422,16 +423,16 @@ const StaffModal = ({ open, setOpen }) => {
                 </>
               )}
 
-              <div className="flex-row! w-full [&>Button]:cursor-pointer sticky bottom-0 bg-white">
+              <div className="flex-row! gap-3 w-full [&>button]:cursor-pointer sticky bottom-0 border-t border-stone-100 bg-white pt-3 pb-4">
                 <Button
                   onClick={() => {
                     setOpen(false);
                   }}
-                  className={`w-1/2`}
+                  variant="outline" className="flex-1"
                 >
                   Cancel
                 </Button>
-                <Button onClick={markStaffAttendance} className={`w-1/2`}>
+                <Button onClick={markStaffAttendance} className="flex-1">
                   Save
                 </Button>
               </div>

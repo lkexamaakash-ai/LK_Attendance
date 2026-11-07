@@ -13,7 +13,7 @@ import {
 
 const colors = {
   Conducted: "#2f855a",
-  Missed: "#c62828",
+  "Pre cancelled": "#c62828",
   Penalties: "#c0922f",
 };
 
@@ -21,7 +21,7 @@ const colors = {
 const LectureOverviewChart = ({ conducted = 0, missed = 0, penalties = 0 }) => {
   const data = [
     { name: "Conducted", value: conducted },
-    { name: "Missed", value: missed },
+    { name: "Pre cancelled", value: missed },
     { name: "Penalties", value: penalties },
   ];
 
@@ -29,7 +29,7 @@ const LectureOverviewChart = ({ conducted = 0, missed = 0, penalties = 0 }) => {
     <div className="mt-4 rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
       <h2 className="text-base font-semibold text-slate-900">Lecture overview</h2>
       <p className="mb-4 text-xs text-slate-500">
-        Conducted, missed and penalized lectures
+        Conducted, pre-cancelled and penalized lectures
       </p>
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">

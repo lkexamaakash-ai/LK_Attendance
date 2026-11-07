@@ -146,7 +146,7 @@ const AllAttendance = ({
 
             let status = att?.status;
             if (status === "CONDUCTED") status = "Conducted";
-            else if (status === "MISSED") status = "Missed";
+            else if (status === "MISSED") status = "Pre cancelled";
             else status = "Cancelled";
 
             let penaltyMin = calculatePenaltyMinutes(
@@ -192,7 +192,7 @@ const AllAttendance = ({
 
             let status = att?.status;
             if (status === "CONDUCTED") status = "Conducted";
-            else if (status === "MISSED") status = "Missed";
+            else if (status === "MISSED") status = "Pre cancelled";
             else status = "Cancelled";
 
             let penaltyMin = calculatePenaltyMinutes(
@@ -463,7 +463,7 @@ const AllAttendance = ({
                         className={
                           item.status === "Conducted"
                             ? "text-green-600"
-                            : item.status === "Missed"
+                            : item.status === "Missed" || item.status === "Pre cancelled"
                               ? "text-red-600"
                               : "text-yellow-600"
                         }

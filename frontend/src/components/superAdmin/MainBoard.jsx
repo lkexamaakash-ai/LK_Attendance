@@ -97,7 +97,7 @@ export const MainBoard = () => {
             {countAttendance((att) => att.status === "CONDUCTED")}
           </StatCard>
 
-          <StatCard label="Lectures Missed" icon={CircleX} tone="red">
+          <StatCard label="Pre-cancelled Lectures" icon={CircleX} tone="red">
             {countAttendance((att) => att.status === "MISSED")}
           </StatCard>
 

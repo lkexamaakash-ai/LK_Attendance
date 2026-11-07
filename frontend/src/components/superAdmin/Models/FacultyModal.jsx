@@ -431,8 +431,12 @@ const FacultyModal = ({ open, setOpen }) => {
     <>
       {open && (
         <div className="h-screen w-full bg-maroon-900/40 backdrop-blur-[2px] absolute top-0 left-0 flex justify-center items-center">
-          <div className="h-[80vh] p-5 xl:w-[40vw] w-[90%] bg-white shadow-2xl rounded-2xl border border-stone-200 overflow-hidden ">
-            <div className="flex justify-end px-5">
+          <div className="flex max-h-[88vh] w-[92%] flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-2xl xl:w-[42vw] xl:max-w-2xl">
+            <div className="flex items-start justify-between border-b border-stone-100 px-6 py-4">
+              <div>
+                <h1 className="text-xl font-semibold text-maroon-800">Faculty Attendance</h1>
+                <p className="mt-0.5 text-xs text-slate-500">Record lecture status, penalty and comments.</p>
+              </div>
               <span
                 className="cursor-pointer rounded-full px-2.5 py-1 text-base leading-none text-slate-400 transition-colors hover:bg-maroon-50 hover:text-maroon-700"
                 onClick={() => setOpen(false)}
@@ -440,11 +444,8 @@ const FacultyModal = ({ open, setOpen }) => {
                 ✕
               </span>
             </div>
-            <div>
-              <h1 className="text-xl font-semibold mb-3 text-maroon-800">Faculty Attendance</h1>
-            </div>
 
-            <div className="flex h-[90%] flex-col gap-5 [&>div]:flex [&>div]:flex-col [&>div]:gap-2 overflow-y-auto overflow-x-hidden">
+            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-6 pt-5 pb-0 [&>div]:flex [&>div]:flex-col [&>div]:gap-1.5">
               <div>
                 <Label>Date</Label>
                 <Input
@@ -558,7 +559,7 @@ const FacultyModal = ({ open, setOpen }) => {
                     <SelectContent>
                       <SelectItem value={`CONDUCTED`}>Conducted</SelectItem>
                       <SelectItem value={`CANCELLED`}>Cancelled</SelectItem>
-                      <SelectItem value={`MISSED`}>Missed</SelectItem>
+                      <SelectItem value={`MISSED`}>Pre cancelled</SelectItem>
                     </SelectContent>
                   ) : (
                     <SelectContent>
@@ -669,12 +670,12 @@ const FacultyModal = ({ open, setOpen }) => {
                 />
               </div>
 
-              <div className="flex-row! w-full [&>Button]:cursor-pointer sticky bottom-0 bg-white">
+              <div className="flex-row! gap-3 w-full [&>button]:cursor-pointer sticky bottom-0 border-t border-stone-100 bg-white pt-3 pb-4">
                 <Button
                   onClick={() => {
                     setOpen(false);
                   }}
-                  className={`w-1/2`}
+                  variant="outline" className="flex-1"
                 >
                   Cancel
                 </Button>
@@ -684,7 +685,7 @@ const FacultyModal = ({ open, setOpen }) => {
                       ? markAttendance
                       : markSalaryBasedAttendance
                   }
-                  className={`w-1/2`}
+                  className="flex-1"
                 >
                   Save
                 </Button>
