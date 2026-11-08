@@ -60,6 +60,7 @@ const getUsersByBranch = async (branchId, currentUser) => {
 
 const getAllUser = async () => {
   return await prisma.user.findMany({
+    where: { role: { not: "STUDENT" } },
     select: {
       id: true,
       name: true,
@@ -343,6 +344,7 @@ const branchDashboard = async () => {
   });
 
   const faculty = await prisma.user.findMany({
+    where: { role: { not: "STUDENT" } },
     include: {
       facultySubjects: {
         include: { subject: true },

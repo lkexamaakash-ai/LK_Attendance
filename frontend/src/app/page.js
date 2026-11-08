@@ -27,6 +27,9 @@ export default function Home() {
       }
       if(loggedIn.data.user.role === "STAFF"){
         redirect("/staff")
+      }
+      if(loggedIn.data.user.role === "STUDENT"){
+        redirect("/student")
       }      
     }else{
       redirect("/login")
