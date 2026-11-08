@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import StudentEditModal from "./StudentEditModal";
+import StudentFees from "./StudentFees";
 import { DaysBadge, api, errorText, formatDate, initialsOf, money } from "./shared";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -160,6 +161,13 @@ const StudentProfileView = ({ mode, studentId, backPath, children }) => {
             </div>
           </div>
         </div>
+
+        <StudentFees
+          student={student}
+          enrollment={student.enrollments?.[0]}
+          isAdmin={mode === "admin"}
+          onChanged={load}
+        />
 
         {student.enrollments?.length > 1 && (
           <div className="rounded-2xl border border-stone-200 p-5">

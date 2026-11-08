@@ -122,3 +122,38 @@ export const Field = ({ label, children, className = "" }) => (
 
 export const inputClass =
   "h-10 w-full rounded-md border border-stone-300 bg-white px-3 text-sm text-slate-900 shadow-xs outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-300/50 disabled:bg-stone-50 disabled:text-slate-500";
+
+// ---------- payments ----------
+export const PAY_MODES = [
+  ["CASH", "Cash"],
+  ["UPI", "UPI"],
+  ["BANK_TRANSFER", "Bank transfer"],
+  ["CHEQUE", "Cheque"],
+  ["CARD", "Card"],
+];
+export const modeLabel = (m) => PAY_MODES.find((x) => x[0] === m)?.[1] || m || "-";
+
+export const PLAN_LABEL = {
+  FULL: "Full payment",
+  DOWN_PAYMENT: "Down payment + balance",
+  EMI: "EMI (installments)",
+};
+
+const payTone = {
+  PAID: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  PARTIAL: "bg-sky-50 text-sky-700 ring-sky-200",
+  PENDING: "bg-slate-100 text-slate-600 ring-slate-200",
+  OVERDUE: "bg-red-50 text-red-700 ring-red-200",
+  NO_FEE: "bg-slate-100 text-slate-500 ring-slate-200",
+};
+const payText = { PAID: "Paid", PARTIAL: "Part-paid", PENDING: "Unpaid", OVERDUE: "Overdue", NO_FEE: "No fee" };
+
+export const PayBadge = ({ status }) => (
+  <span
+    className={`inline-block whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ring-1 ${
+      payTone[status] || payTone.PENDING
+    }`}
+  >
+    {payText[status] || "Unpaid"}
+  </span>
+);

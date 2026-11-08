@@ -1,10 +1,10 @@
 "use client";
-import { BookOpen, Building2, CalendarDays, Layers } from "lucide-react";
+import { BookOpen, Building2, CalendarDays, Layers, Receipt, Wallet } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import StatCard from "../layout/StatCard";
 import { DaysHero } from "./StudentProfileView";
-import { api, errorText, formatDate } from "./shared";
+import { PayBadge, api, errorText, formatDate, money } from "./shared";
 
 // Home page of a logged-in student.
 const StudentDashboard = () => {
@@ -38,6 +38,26 @@ const StudentDashboard = () => {
         <StatCard label="Batch" icon={Layers} tone="gold">{cur?.batchName || "-"}</StatCard>
         <StatCard label="Branch" icon={Building2} tone="slate">{student.branchName}</StatCard>
         <StatCard label="Valid till" icon={CalendarDays} tone="green">{formatDate(cur?.endDate)}</StatCard>
+        {cur && cur.totalFee > 0 && (
+          <>
+            <StatCard label="Fee balance" icon={Wallet} tone={cur.balance > 0 ? "red" : "green"}>
+              {cur.balance > 0 ? money(cur.balance) : "Fully paid"}
+            </StatCard>
+            <StatCard label="Next payment" icon={Receipt} tone="gold">
+              {cur.nextDue && cur.balance > 0 ? (
+                <span className="block text-lg leading-snug">
+                  {money(cur.nextDue.amount)}
+                  <span className="block text-xs font-normal text-slate-500">due {formatDate(cur.nextDue.date)}</span>
+                </span>
+              ) : (
+                "-"
+              )}
+            </StatCard>
+            <StatCard label="Payment status" icon={Wallet} tone="slate">
+              <PayBadge status={cur.paymentStatus} />
+            </StatCard>
+          </>
+        )}
       </div>
     </div>
   );

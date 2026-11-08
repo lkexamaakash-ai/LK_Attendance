@@ -17,6 +17,8 @@ const HEADERS = [
   "Admission Date (optional)",
   "Address (optional)",
   "Email (optional)",
+  "Amount Paid (optional)",
+  "Payment Mode (optional)",
 ];
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -41,7 +43,7 @@ const norm = (h) => String(h).toLowerCase().replace(/\(.*?\)/g, "").replace(/[^a
 const downloadTemplate = () => {
   const ws = XLSX.utils.aoa_to_sheet([
     HEADERS,
-    ["Riya Shah", "9876543210", "UPSC/GPSC Eng", "Morning", "2026-11-10", "2027-05-10", 25000, "2026-11-10", "Adajan, Surat", ""],
+    ["Riya Shah", "9876543210", "UPSC/GPSC Eng", "Morning", "2026-11-10", "2027-05-10", 25000, "2026-11-10", "Adajan, Surat", "", 10000, "Cash"],
   ]);
   ws["!cols"] = HEADERS.map(() => ({ wch: 22 }));
   const wb = XLSX.utils.book_new();
@@ -88,6 +90,8 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
           admissionDate: toIso(cell(r, "admissiondate")),
           address: String(cell(r, "address")).trim(),
           email: String(cell(r, "email")).trim(),
+          amountPaid: cell(r, "amountpaid") === "" ? "" : Number(cell(r, "amountpaid")),
+          paymentMode: String(cell(r, "paymentmode")).trim(),
         }));
       if (!parsed.length) return toast.error("The file has no student rows");
       setRows(parsed);
@@ -135,7 +139,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-maroon-100 bg-maroon-50/60 p-4">
           <p className="text-sm text-slate-700">
-            Use our template. Course and batch names must match exactly what is already created for the branch.
+            Use our template. Course and batch names must match exactly what is already created for the branch. Amount Paid and Payment Mode (Cash, UPI, Bank transfer, Cheque or Card) are optional, and both are needed to record a payment.
           </p>
           <Button type="button" variant="outline" className="cursor-pointer" onClick={downloadTemplate}>
             <Download className="size-4" /> Download template

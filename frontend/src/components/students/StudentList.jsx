@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import EmptyState from "../layout/EmptyState";
 import StudentFormModal from "./StudentFormModal";
 import StudentImportModal from "./StudentImportModal";
-import { DaysBadge, api, errorText, formatDate, initialsOf } from "./shared";
+import { DaysBadge, PayBadge, api, errorText, formatDate, initialsOf, money } from "./shared";
 
 const PAGE_SIZE = 20;
 
@@ -106,7 +106,7 @@ const StudentList = ({ role, basePath }) => {
         </div>
 
         <div className="mt-4 min-h-0 flex-1 overflow-auto rounded-lg border border-stone-200">
-          <table className="w-full min-w-[820px] text-left text-sm">
+          <table className="w-full min-w-[980px] text-left text-sm">
             <thead className="sticky top-0 bg-maroon-50 text-xs uppercase tracking-wide text-maroon-800">
               <tr>
                 <th className="px-4 py-3 font-semibold">Student</th>
@@ -114,6 +114,7 @@ const StudentList = ({ role, basePath }) => {
                 <th className="px-4 py-3 font-semibold">Course &amp; Batch</th>
                 <th className="px-4 py-3 font-semibold">Valid till</th>
                 <th className="px-4 py-3 font-semibold">Days left</th>
+                <th className="px-4 py-3 font-semibold">Fees</th>
                 <th className="px-4 py-3 text-right font-semibold">Profile</th>
               </tr>
             </thead>
@@ -154,6 +155,18 @@ const StudentList = ({ role, basePath }) => {
                   <td className="px-4 py-3">{formatDate(s.currentEnrollment?.endDate)}</td>
                   <td className="px-4 py-3">
                     <DaysBadge enrollment={s.currentEnrollment} />
+                  </td>
+                  <td className="px-4 py-3">
+                    {s.currentEnrollment ? (
+                      <>
+                        <PayBadge status={s.currentEnrollment.paymentStatus} />
+                        {s.currentEnrollment.balance > 0 && (
+                          <p className="mt-1 text-xs text-slate-500">{money(s.currentEnrollment.balance)} due</p>
+                        )}
+                      </>
+                    ) : (
+                      "-"
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <span className="text-sm font-semibold text-maroon-700">View →</span>
