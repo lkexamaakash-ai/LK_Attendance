@@ -17,6 +17,7 @@ model Branch {
   staffAttendances       StaffAttendance[]
   users                  User[]
   facultyBranches        facultyBranch[]
+  students               Student[]
 }
 
 model User {
@@ -44,6 +45,7 @@ model User {
   staffAttendances       StaffAttendance[]
   branch                 Branch?                 @relation(fields: [branchId], references: [id])
   facultyBranches        facultyBranch[]
+  student                Student?
 }
 
 model Subject {
@@ -152,6 +154,7 @@ model Batch {
   historicalData   HistoricalFacultyData[]
   lectureSchedules LectureSchedule[]
   subjects         Subject[]
+  enrollments      Enrollment[]
 
   @@unique([name, courseId])
 }
@@ -242,6 +245,7 @@ enum Role {
   BRANCH_ADMIN
   FACULTY
   STAFF
+  STUDENT
 }
 
 enum FACULTY_TYPE {
@@ -252,4 +256,34 @@ enum FACULTY_TYPE {
 enum STAFF_ATTENDANCE_STATUS {
   PRESENT
   ONLEAVE
+}
+
+model Student {
+  id            Int          @id @default(autoincrement())
+  userId        Int          @unique
+  branchId      Int
+  admissionDate DateTime     @db.Date
+  address       String?
+  email         String?
+  createdAt     DateTime     @default(now())
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch        Branch       @relation(fields: [branchId], references: [id])
+  enrollments   Enrollment[]
+
+  @@index([branchId])
+}
+
+model Enrollment {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  batchId   Int
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  totalFee  Int      @default(0)
+  createdAt DateTime @default(now())
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  batch     Batch    @relation(fields: [batchId], references: [id])
+
+  @@index([studentId])
+  @@index([endDate])
 }
