@@ -20,4 +20,8 @@ router.get("/:id", protect, requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "STUDENT"
 router.put("/:id", protect, admins, controller.update);
 router.put("/:id/enrollments/:enrollmentId", protect, admins, controller.updateEnrollment);
 
+// Payments for a course period
+router.post("/:id/enrollments/:enrollmentId/payments", protect, admins, controller.addPayment);
+router.delete("/:id/enrollments/:enrollmentId/payments/:paymentId", protect, admins, controller.removePayment);
+
 module.exports = router;

@@ -24,4 +24,12 @@ const updateEnrollment = handle((req) =>
   service.updateEnrollment(req.user.id, req.params.id, req.params.enrollmentId, req.body),
 );
 
-module.exports = { create, bulkCreate, list, me, getOne, update, updateEnrollment };
+const addPayment = handle(
+  (req) => service.recordPayment(req.user.id, req.params.id, req.params.enrollmentId, req.body),
+  201,
+);
+const removePayment = handle((req) =>
+  service.deletePayment(req.user.id, req.params.id, req.params.enrollmentId, req.params.paymentId),
+);
+
+module.exports = { addPayment, removePayment, create, bulkCreate, list, me, getOne, update, updateEnrollment };

@@ -46,6 +46,7 @@ model User {
   branch                 Branch?                 @relation(fields: [branchId], references: [id])
   facultyBranches        facultyBranch[]
   student                Student?
+  paymentsRecorded       Payment[]               @relation("PaymentRecordedBy")
 }
 
 model Subject {
@@ -240,6 +241,20 @@ enum StatusType {
   MISSED
 }
 
+enum PaymentPlan {
+  FULL
+  DOWN_PAYMENT
+  EMI
+}
+
+enum PaymentMode {
+  CASH
+  UPI
+  BANK_TRANSFER
+  CHEQUE
+  CARD
+}
+
 enum Role {
   SUPER_ADMIN
   BRANCH_ADMIN
@@ -280,10 +295,47 @@ model Enrollment {
   startDate DateTime @db.Date
   endDate   DateTime @db.Date
   totalFee  Int      @default(0)
+  planType       PaymentPlan?
+  balanceDueDate DateTime?    @db.Date
   createdAt DateTime @default(now())
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   batch     Batch    @relation(fields: [batchId], references: [id])
+  installments   Installment[]
+  payments       Payment[]
 
   @@index([studentId])
   @@index([endDate])
+}
+
+model Installment {
+  id           Int        @id @default(autoincrement())
+  enrollmentId Int
+  number       Int
+  dueDate      DateTime   @db.Date
+  amount       Int
+  createdAt    DateTime   @default(now())
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  payments     Payment[]
+
+  @@index([enrollmentId])
+  @@index([dueDate])
+}
+
+model Payment {
+  id            Int          @id @default(autoincrement())
+  enrollmentId  Int
+  installmentId Int?
+  amount        Int
+  paidOn        DateTime     @db.Date
+  mode          PaymentMode
+  receiptNo     String?
+  note          String?
+  recordedById  Int?
+  createdAt     DateTime     @default(now())
+  enrollment    Enrollment   @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  installment   Installment? @relation(fields: [installmentId], references: [id], onDelete: SetNull)
+  recordedBy    User?        @relation("PaymentRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@index([enrollmentId])
+  @@index([installmentId])
 }
