@@ -1,7 +1,13 @@
 import React from "react";
 
 // Two-panel layout shared by the login, register and set-password pages.
-const AuthShell = ({ title, subtitle, children, footer }) => {
+const AuthShell = ({
+  title,
+  subtitle,
+  children,
+  footer,
+  panelText = "Attendance, students and payroll for every LK Academy branch.",
+}) => {
   return (
     <div className="flex min-h-screen w-full bg-app">
       <div className="relative hidden w-[45%] flex-col justify-between overflow-hidden bg-gradient-to-br from-maroon-700 via-maroon-800 to-maroon-900 p-12 text-white lg:flex">
@@ -13,18 +19,9 @@ const AuthShell = ({ title, subtitle, children, footer }) => {
           <img src="/Header.jpg" alt="LK Academy" className="h-14 w-auto" />
         </div>
 
-        <div className="relative">
-          <div className="mb-5 h-1 w-14 rounded bg-gold-400" />
-          <h2 className="text-4xl font-semibold leading-tight">
-            Your guide to the
-            <br />
-            <span className="text-gold-300">next milestone.</span>
-          </h2>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-maroon-100/80">
-            Faculty lectures, staff attendance, penalties and reports for every
-            branch, all in one place.
-          </p>
-        </div>
+        <p className="relative max-w-sm text-base leading-relaxed text-maroon-100/90">
+          {panelText}
+        </p>
 
         <p className="relative text-xs tracking-wide text-maroon-200/70">
           LK Academy
