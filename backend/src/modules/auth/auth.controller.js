@@ -10,7 +10,7 @@ const {
 
 const login = async (req, res) => {
   try {
-    const { phoneNumber, password } = req.body;
+    const { phoneNumber, password, loginAs } = req.body;
 
     if (!phoneNumber || !password) {
       return res.status(400).json({
@@ -18,7 +18,7 @@ const login = async (req, res) => {
       });
     }
 
-    const data = await loginUser(phoneNumber, password);
+    const data = await loginUser(phoneNumber, password, loginAs);
 
     res.status(200).json({
       success: true,
@@ -26,7 +26,7 @@ const login = async (req, res) => {
       data,
     });
   } catch (err) {
-    res.status(401).json({
+    res.status(err.status || 401).json({
       success: false,
       message: err.message,
     });

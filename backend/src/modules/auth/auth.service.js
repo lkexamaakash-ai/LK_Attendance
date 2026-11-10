@@ -23,7 +23,30 @@ const signToken = (user) =>
     },
   );
 
-const loginUser = async (phoneNumber, password) => {
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCK_MINUTES = 15;
+
+// The four login choices on the login screen and the account roles each one accepts.
+const LOGIN_TYPES = {
+  STUDENT: { label: "Student", roles: ["STUDENT"] },
+  STAFF: { label: "Staff", roles: ["STAFF"] },
+  FACULTY: { label: "Faculty", roles: ["FACULTY"] },
+  BRANCH: { label: "Branch / Admin", roles: ["BRANCH_ADMIN", "SUPER_ADMIN"] },
+};
+const typeOfRole = (role) => Object.keys(LOGIN_TYPES).find((k) => LOGIN_TYPES[k].roles.includes(role));
+
+class LoginError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
+
+const loginUser = async (phoneNumber, password, loginAs) => {
+  if (loginAs && !LOGIN_TYPES[loginAs]) {
+    throw new LoginError(400, "Please choose a valid login type");
+  }
+
   const user = await prisma.user.findUnique({
     where: { phoneNumber },
     include: {
@@ -37,16 +60,62 @@ const loginUser = async (phoneNumber, password) => {
   });
 
   if (!user) {
-    throw new Error(`Invalid phoneNumber or password`);
+    throw new LoginError(401, "Invalid phone number or password");
+  }
+
+  const now = new Date();
+
+  // Locked after too many wrong passwords
+  if (user.lockedUntil && user.lockedUntil > now) {
+    const minutes = Math.ceil((user.lockedUntil.getTime() - now.getTime()) / 60000);
+    throw new LoginError(429, `Too many wrong attempts. Please try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`);
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    throw new Error(`Invalid phoneNumber or password`);
+    const previous = user.lockedUntil && user.lockedUntil <= now ? 0 : user.failedLoginAttempts || 0;
+    const attempts = previous + 1;
+
+    if (attempts >= MAX_FAILED_ATTEMPTS) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: 0, lockedUntil: new Date(now.getTime() + LOCK_MINUTES * 60000) },
+      });
+      throw new LoginError(429, `Too many wrong attempts. This account is locked for ${LOCK_MINUTES} minutes.`);
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: attempts, lockedUntil: null },
+    });
+    const left = MAX_FAILED_ATTEMPTS - attempts;
+    throw new LoginError(
+      401,
+      left <= 2
+        ? `Invalid phone number or password. ${left} attempt${left === 1 ? "" : "s"} left before this account is locked.`
+        : "Invalid phone number or password",
+    );
+  }
+
+  // Correct password: clear any earlier failed attempts
+  if (user.failedLoginAttempts || user.lockedUntil) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: 0, lockedUntil: null },
+    });
   }
 
   if (!user.isActive) {
-    throw new Error(`Not allowed to login`);
+    throw new LoginError(403, "Not allowed to login");
+  }
+
+  // The chosen login type must match the account
+  if (loginAs && !LOGIN_TYPES[loginAs].roles.includes(user.role)) {
+    const right = LOGIN_TYPES[typeOfRole(user.role)];
+    throw new LoginError(
+      403,
+      `This is a ${right.label} account. Please choose "${right.label}" login.`,
+    );
   }
 
   const token = signToken(user);
