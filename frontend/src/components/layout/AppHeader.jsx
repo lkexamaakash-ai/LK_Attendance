@@ -7,6 +7,7 @@ const roleNames = {
   BRANCH_ADMIN: "Branch Admin",
   FACULTY: "Faculty",
   STAFF: "Staff",
+  STUDENT: "Student",
 };
 
 const initialsOf = (name = "") =>

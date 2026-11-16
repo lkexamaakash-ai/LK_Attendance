@@ -1,5 +1,5 @@
 "use client";
-import { LayoutDashboard, Building2, BookOpen, Layers, Library, Presentation, CalendarCheck, UserCog, ChartColumn, History, CircleUser } from "lucide-react";
+import { Users, LayoutDashboard, Building2, BookOpen, Layers, Library, Presentation, CalendarCheck, UserCog, ChartColumn, History, CircleUser } from "lucide-react";
 import AppSidebar from "../layout/AppSidebar";
 
 const items = [
@@ -10,6 +10,7 @@ const items = [
   { name: "Subject Management", link: "/superadmin/subjectmanage", icon: Library },
   { name: "Lecture Management", link: "/superadmin/lecturemanage", icon: Presentation },
   { name: "Attendance", link: "/superadmin/attendance", icon: CalendarCheck },
+  { name: "Student Management", link: "/superadmin/students", icon: Users },
   { name: "User Management", link: "/superadmin/usermanage", icon: UserCog },
   { name: "Report", link: "/superadmin/report", icon: ChartColumn },
   { name: "Historical Data", link: "/superadmin/uploadfile", icon: History },
