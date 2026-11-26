@@ -19,7 +19,7 @@ const timeOf = (iso) =>
 
 // Marks student attendance, batch by batch and lecture by lecture.
 // Used by super admin, branch admin and faculty.
-const StudentAttendanceMarker = ({ role }) => {
+const StudentAttendanceMarker = ({ role, onBack }) => {
   const isFaculty = role === "FACULTY";
   const isSuper = role === "SUPER_ADMIN";
 
@@ -192,6 +192,14 @@ const StudentAttendanceMarker = ({ role }) => {
   // ---------- lecture list view ----------
   return (
     <div className="m-2 h-[91%] space-y-4 overflow-y-auto rounded-xl border border-stone-200 bg-white p-4 shadow-sm sm:p-6">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1 text-sm font-medium text-maroon-700 hover:underline"
+        >
+          <ArrowLeft className="size-4" /> Back to Attendance
+        </button>
+      )}
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-sm text-slate-600">
           Date

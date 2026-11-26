@@ -1,5 +1,5 @@
 "use client";
-import { ArrowRight, Briefcase, GraduationCap } from "lucide-react";
+import { ArrowRight, Briefcase, ClipboardCheck, GraduationCap } from "lucide-react";
 import React from "react";
 
 const Card = ({ icon: Icon, title, description, cta, onClick }) => (
@@ -21,16 +21,16 @@ const Card = ({ icon: Icon, title, description, cta, onClick }) => (
 );
 
 // Landing page for marking attendance (shared by super admin and branch admin).
-const AttendanceHub = ({ onStaff, onFaculty }) => (
+const AttendanceHub = ({ onStaff, onFaculty, onStudent }) => (
   <div className="m-2 h-[91%] overflow-y-auto rounded-xl border border-stone-200 bg-white p-6 shadow-sm sm:p-10">
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-6xl">
       <div className="mb-1 h-1 w-12 rounded bg-gold-400" />
       <h2 className="mt-3 text-2xl font-semibold text-slate-900">Mark Attendance</h2>
       <p className="mt-1 text-sm text-slate-500">
         Choose whose attendance you want to record.
       </p>
 
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
+      <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         <Card
           icon={Briefcase}
           title="Staff Attendance"
@@ -45,6 +45,15 @@ const AttendanceHub = ({ onStaff, onFaculty }) => (
           cta="Mark faculty attendance"
           onClick={onFaculty}
         />
+        {onStudent && (
+          <Card
+            icon={ClipboardCheck}
+            title="Student Attendance"
+            description="Mark present or absent for the students of each lecture, batch by batch."
+            cta="Mark student attendance"
+            onClick={onStudent}
+          />
+        )}
       </div>
     </div>
   </div>
