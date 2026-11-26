@@ -49,6 +49,7 @@ model User {
   facultyBranches        facultyBranch[]
   student                Student?
   paymentsRecorded       Payment[]               @relation("PaymentRecordedBy")
+  studentAttendanceMarked StudentAttendance[]    @relation("StudentAttendanceMarkedBy")
 }
 
 model Subject {
@@ -86,6 +87,7 @@ model LectureSchedule {
   createdAt      DateTime            @default(now()) @db.Timestamp(6)
   cycleCount     Int                 @default(1)
   attendance     LectureAttendance[]
+  studentAttendances StudentAttendance[]
   batch          Batch               @relation(fields: [batchId], references: [id])
   faculty        User                @relation(fields: [facultyId], references: [id])
   subject        Subject             @relation(fields: [subjectId], references: [id])
@@ -158,6 +160,7 @@ model Batch {
   lectureSchedules LectureSchedule[]
   subjects         Subject[]
   enrollments      Enrollment[]
+  studentAttendances StudentAttendance[]
 
   @@unique([name, courseId])
 }
@@ -286,6 +289,7 @@ model Student {
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   branch        Branch       @relation(fields: [branchId], references: [id])
   enrollments   Enrollment[]
+  attendances   StudentAttendance[]
 
   @@index([branchId])
 }
@@ -340,4 +344,32 @@ model Payment {
 
   @@index([enrollmentId])
   @@index([installmentId])
+}
+
+
+enum StudentAttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+// One row per student, per lecture, per date.
+model StudentAttendance {
+  id         Int                     @id @default(autoincrement())
+  studentId  Int
+  batchId    Int
+  lectureId  Int
+  date       DateTime                @db.Date
+  status     StudentAttendanceStatus
+  markedById Int
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
+  student    Student                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  batch      Batch                   @relation(fields: [batchId], references: [id])
+  lecture    LectureSchedule         @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  markedBy   User                    @relation("StudentAttendanceMarkedBy", fields: [markedById], references: [id])
+
+  @@unique([studentId, lectureId, date])
+  @@index([lectureId, date])
+  @@index([batchId, date])
+  @@index([studentId])
 }

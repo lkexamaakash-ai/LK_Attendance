@@ -1,9 +1,10 @@
 "use client";
-import { CircleUser, LayoutDashboard } from "lucide-react";
+import { CircleUser, ClipboardCheck, LayoutDashboard } from "lucide-react";
 import AppSidebar from "../layout/AppSidebar";
 
 const items = [
   { name: "Dashboard", link: "/student", icon: LayoutDashboard },
+  { name: "My Attendance", link: "/student/attendance", icon: ClipboardCheck },
   { name: "My Profile", link: "/student/profile", icon: CircleUser },
 ];
 
