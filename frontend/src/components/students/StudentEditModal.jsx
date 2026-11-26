@@ -1,12 +1,12 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Field, ModalShell, api, dateInput, errorText, inputClass } from "./shared";
+import CourseChecklist from "./CourseChecklist";
+import { Field, ModalShell, addMonths, api, dateInput, errorText, inputClass, todayInput } from "./shared";
 
-// Admin: edit a student's details and their current course period.
+// Admin: edit a student's details, their branches and courses, and the period of each course.
 const StudentEditModal = ({ student, onClose, onSaved }) => {
-  const cur = student.currentEnrollment;
   const [form, setForm] = useState({
     name: student.name || "",
     phoneNumber: student.phoneNumber || "",
@@ -14,32 +14,60 @@ const StudentEditModal = ({ student, onClose, onSaved }) => {
     email: student.email || "",
     admissionDate: dateInput(student.admissionDate),
     isActive: student.isActive !== false,
-    courseId: cur ? String(cur.courseId) : "",
-    batchId: cur ? String(cur.batchId) : "",
-    startDate: dateInput(cur?.startDate),
-    endDate: dateInput(cur?.endDate),
-    totalFee: cur ? String(cur.totalFee) : "",
   });
-  const [courses, setCourses] = useState([]);
+  const [branches, setBranches] = useState(null);
+  const [courseIds, setCourseIds] = useState((student.enrollments || []).map((e) => e.courseId));
+  // start / end date of every course, by course id
+  const [periods, setPeriods] = useState(() =>
+    Object.fromEntries(
+      (student.enrollments || []).map((e) => [e.courseId, { startDate: dateInput(e.startDate), endDate: dateInput(e.endDate) }]),
+    ),
+  );
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    api("get", "courses")
-      .then(({ data }) => setCourses((data.data || []).filter((c) => c.branchId === student.branchId)))
-      .catch((e) => toast.error(errorText(e, "Could not load courses")));
-  }, [student.branchId]);
+    api("get", "students/options")
+      .then(({ data }) => setBranches(data.data || []))
+      .catch((e) => {
+        setBranches([]);
+        toast.error(errorText(e, "Could not load branches and courses"));
+      });
+  }, []);
 
-  const batches = useMemo(
-    () => courses.find((c) => String(c.id) === String(form.courseId))?.batches || [],
-    [courses, form.courseId],
-  );
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const courseName = (id) => {
+    for (const b of branches || []) {
+      const c = b.courses.find((x) => x.id === id);
+      if (c) return `${c.name} · ${b.name}`;
+    }
+    return `Course ${id}`;
+  };
+
+  // a newly ticked course starts today and ends in 6 months, until changed
+  const changeCourses = (ids) => {
+    setCourseIds(ids);
+    setPeriods((p) => {
+      const next = { ...p };
+      for (const id of ids) {
+        if (!next[id]) next[id] = { startDate: todayInput(), endDate: addMonths(todayInput(), 6) };
+      }
+      return next;
+    });
+  };
+
+  const setPeriod = (id, key) => (e) =>
+    setPeriods((p) => ({ ...p, [id]: { ...p[id], [key]: e.target.value } }));
 
   const submit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) return toast.error("Name cannot be empty");
     if (!/^\d{10}$/.test(form.phoneNumber.trim())) return toast.error("Phone number must be 10 digits");
-    if (cur && form.endDate < form.startDate) return toast.error("End date cannot be before the start date");
+    for (const id of courseIds) {
+      const p = periods[id];
+      if (!p?.startDate || !p?.endDate) return toast.error(`Please enter the dates for ${courseName(id)}`);
+      if (p.endDate < p.startDate) return toast.error(`End date cannot be before the start date for ${courseName(id)}`);
+    }
 
     try {
       setSaving(true);
@@ -51,14 +79,9 @@ const StudentEditModal = ({ student, onClose, onSaved }) => {
         admissionDate: form.admissionDate || undefined,
         isActive: form.isActive,
       });
-      if (cur) {
-        await api("put", `students/${student.id}/enrollments/${cur.id}`, {
-          batchId: Number(form.batchId),
-          startDate: form.startDate,
-          endDate: form.endDate,
-          totalFee: form.totalFee === "" ? 0 : Number(form.totalFee),
-        });
-      }
+      await api("put", `students/${student.id}/enrollments`, {
+        courses: courseIds.map((courseId) => ({ courseId, ...periods[courseId] })),
+      });
       toast.success("Student updated");
       onSaved?.();
     } catch (err) {
@@ -88,37 +111,26 @@ const StudentEditModal = ({ student, onClose, onSaved }) => {
             <input className={inputClass} value={form.address} onChange={set("address")} />
           </Field>
 
-          {cur && (
-            <>
-              <div className="sm:col-span-2 border-t border-stone-100 pt-2">
-                <p className="text-sm font-semibold text-maroon-800">Current course period</p>
-              </div>
-              <Field label="Course">
-                <select className={inputClass} value={form.courseId} onChange={(e) => setForm((f) => ({ ...f, courseId: e.target.value, batchId: "" }))}>
-                  <option value="">Select course</option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Batch">
-                <select className={inputClass} value={form.batchId} onChange={set("batchId")}>
-                  <option value="">Select batch</option>
-                  {batches.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Course starts">
-                <input type="date" className={inputClass} value={form.startDate} onChange={set("startDate")} />
-              </Field>
-              <Field label="Course ends">
-                <input type="date" className={inputClass} value={form.endDate} onChange={set("endDate")} />
-              </Field>
-              <Field label="Total fee (₹)">
-                <input type="number" min="0" className={inputClass} value={form.totalFee} onChange={set("totalFee")} />
-              </Field>
-            </>
+          <div className="border-t border-stone-100 pt-3 sm:col-span-2">
+            <p className="mb-2 text-sm font-semibold text-maroon-800">Branches and courses</p>
+            {branches === null ? (
+              <p className="text-sm text-slate-500">Loading...</p>
+            ) : (
+              <CourseChecklist branches={branches} value={courseIds} onChange={changeCourses} />
+            )}
+          </div>
+
+          {courseIds.length > 0 && branches && (
+            <div className="space-y-2 sm:col-span-2">
+              <p className="text-sm font-medium text-slate-700">Course periods</p>
+              {courseIds.map((id) => (
+                <div key={id} className="grid grid-cols-1 items-center gap-2 rounded-lg border border-stone-200 p-3 sm:grid-cols-[1fr_9rem_9rem]">
+                  <span className="text-sm font-medium text-slate-800">{courseName(id)}</span>
+                  <input type="date" aria-label="Start date" className={inputClass} value={periods[id]?.startDate || ""} onChange={setPeriod(id, "startDate")} />
+                  <input type="date" aria-label="End date" className={inputClass} value={periods[id]?.endDate || ""} onChange={setPeriod(id, "endDate")} />
+                </div>
+              ))}
+            </div>
           )}
 
           <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 sm:col-span-2">

@@ -9,16 +9,12 @@ import { Field, ModalShell, api, errorText, getAuth, inputClass } from "./shared
 const HEADERS = [
   "Name",
   "Phone",
-  "Course",
-  "Batch",
+  "Courses (comma separated)",
   "Start Date (YYYY-MM-DD)",
   "End Date (YYYY-MM-DD)",
-  "Total Fee",
   "Admission Date (optional)",
   "Address (optional)",
   "Email (optional)",
-  "Amount Paid (optional)",
-  "Payment Mode (optional)",
 ];
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -43,7 +39,7 @@ const norm = (h) => String(h).toLowerCase().replace(/\(.*?\)/g, "").replace(/[^a
 const downloadTemplate = () => {
   const ws = XLSX.utils.aoa_to_sheet([
     HEADERS,
-    ["Riya Shah", "9876543210", "UPSC/GPSC Eng", "Morning", "2026-11-10", "2027-05-10", 25000, "2026-11-10", "Adajan, Surat", "", 10000, "Cash"],
+    ["Riya Shah", "9876543210", "UPSC/GPSC Eng, GPSC Gujarati", "2026-11-10", "2027-05-10", "2026-11-10", "Adajan, Surat", ""],
   ]);
   ws["!cols"] = HEADERS.map(() => ({ wch: 22 }));
   const wb = XLSX.utils.book_new();
@@ -70,7 +66,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
       const [head, ...body] = grid;
       const idx = {};
       (head || []).forEach((h, i) => (idx[norm(h)] = i));
-      const need = ["name", "phone", "course", "batch", "startdate", "enddate"];
+      const need = ["name", "phone", "courses", "startdate", "enddate"];
       const missing = need.filter((k) => idx[k] === undefined);
       if (missing.length) {
         toast.error("Some columns are missing. Please use the template.");
@@ -82,16 +78,12 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
         .map((r) => ({
           name: String(cell(r, "name")).trim(),
           phoneNumber: String(cell(r, "phone")).replace(/\D/g, "").slice(-10) || String(cell(r, "phone")).trim(),
-          courseName: String(cell(r, "course")).trim(),
-          batchName: String(cell(r, "batch")).trim(),
+          courseNames: String(cell(r, "courses")).trim(),
           startDate: toIso(cell(r, "startdate")),
           endDate: toIso(cell(r, "enddate")),
-          totalFee: cell(r, "totalfee") === "" ? 0 : Number(cell(r, "totalfee")),
           admissionDate: toIso(cell(r, "admissiondate")),
           address: String(cell(r, "address")).trim(),
           email: String(cell(r, "email")).trim(),
-          amountPaid: cell(r, "amountpaid") === "" ? "" : Number(cell(r, "amountpaid")),
-          paymentMode: String(cell(r, "paymentmode")).trim(),
         }));
       if (!parsed.length) return toast.error("The file has no student rows");
       setRows(parsed);
@@ -139,7 +131,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-maroon-100 bg-maroon-50/60 p-4">
           <p className="text-sm text-slate-700">
-            Use our template. Course and batch names must match exactly what is already created for the branch. Amount Paid and Payment Mode (Cash, UPI, Bank transfer, Cheque or Card) are optional, and both are needed to record a payment.
+            Use our template. Course names must match exactly what is already created for the branch. For more than one course, separate the names with commas.
           </p>
           <Button type="button" variant="outline" className="cursor-pointer" onClick={downloadTemplate}>
             <Download className="size-4" /> Download template
@@ -171,7 +163,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
             <table className="w-full text-left text-xs">
               <thead className="bg-maroon-50 text-maroon-800">
                 <tr>
-                  {["Name", "Phone", "Course", "Batch", "Start", "End"].map((h) => (
+                  {["Name", "Phone", "Courses", "Start", "End"].map((h) => (
                     <th key={h} className="px-3 py-2 font-semibold">{h}</th>
                   ))}
                 </tr>
@@ -181,8 +173,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
                   <tr key={i} className="border-t border-stone-100">
                     <td className="px-3 py-1.5">{r.name}</td>
                     <td className="px-3 py-1.5">{r.phoneNumber}</td>
-                    <td className="px-3 py-1.5">{r.courseName}</td>
-                    <td className="px-3 py-1.5">{r.batchName}</td>
+                    <td className="px-3 py-1.5">{r.courseNames}</td>
                     <td className="px-3 py-1.5">{r.startDate}</td>
                     <td className="px-3 py-1.5">{r.endDate}</td>
                   </tr>

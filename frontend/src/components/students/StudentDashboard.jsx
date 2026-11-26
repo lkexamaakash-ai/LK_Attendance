@@ -1,10 +1,10 @@
 "use client";
-import { BookOpen, Building2, CalendarDays, Layers, Receipt, Wallet } from "lucide-react";
+import { BookOpen, Building2, CalendarDays } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import StatCard from "../layout/StatCard";
 import { DaysHero } from "./StudentProfileView";
-import { PayBadge, api, errorText, formatDate, money } from "./shared";
+import { api, errorText, formatDate } from "./shared";
 
 // Home page of a logged-in student.
 const StudentDashboard = () => {
@@ -21,43 +21,31 @@ const StudentDashboard = () => {
   if (loading) return <p className="m-6 text-sm text-slate-500">Loading...</p>;
   if (!student) return <p className="m-6 text-sm text-slate-500">We could not find your student profile. Please contact your branch.</p>;
 
+  const enrollments = student.enrollments || [];
   const cur = student.currentEnrollment;
   return (
     <div className="m-2 h-[91%] space-y-4 overflow-y-auto rounded-xl border border-stone-200 bg-white p-4 shadow-sm sm:p-6">
       <div>
         <h2 className="text-2xl font-semibold text-maroon-800">Welcome, {student.name} 👋</h2>
-        <p className="text-sm text-slate-500">Here is a quick look at your course.</p>
+        <p className="text-sm text-slate-500">Here is a quick look at your courses.</p>
       </div>
 
-      <DaysHero enrollment={cur} />
+      {enrollments.length === 0 ? (
+        <DaysHero enrollment={null} />
+      ) : (
+        enrollments.map((e) => <DaysHero key={e.id} enrollment={e} />)
+      )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Course" icon={BookOpen}>
-          <span className="block whitespace-normal break-words text-lg leading-snug">{cur?.courseName || "-"}</span>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label={enrollments.length > 1 ? "Courses" : "Course"} icon={BookOpen}>
+          <span className="block whitespace-normal break-words text-lg leading-snug">
+            {enrollments.length ? enrollments.map((e) => e.courseName).join(", ") : "-"}
+          </span>
         </StatCard>
-        <StatCard label="Batch" icon={Layers} tone="gold">{cur?.batchName || "-"}</StatCard>
-        <StatCard label="Branch" icon={Building2} tone="slate">{student.branchName}</StatCard>
+        <StatCard label={student.branchNames?.length > 1 ? "Branches" : "Branch"} icon={Building2} tone="slate">
+          <span className="block whitespace-normal break-words text-lg leading-snug">{student.branchName}</span>
+        </StatCard>
         <StatCard label="Valid till" icon={CalendarDays} tone="green">{formatDate(cur?.endDate)}</StatCard>
-        {cur && cur.totalFee > 0 && (
-          <>
-            <StatCard label="Fee balance" icon={Wallet} tone={cur.balance > 0 ? "red" : "green"}>
-              {cur.balance > 0 ? money(cur.balance) : "Fully paid"}
-            </StatCard>
-            <StatCard label="Next payment" icon={Receipt} tone="gold">
-              {cur.nextDue && cur.balance > 0 ? (
-                <span className="block text-lg leading-snug">
-                  {money(cur.nextDue.amount)}
-                  <span className="block text-xs font-normal text-slate-500">due {formatDate(cur.nextDue.date)}</span>
-                </span>
-              ) : (
-                "-"
-              )}
-            </StatCard>
-            <StatCard label="Payment status" icon={Wallet} tone="slate">
-              <PayBadge status={cur.paymentStatus} />
-            </StatCard>
-          </>
-        )}
       </div>
     </div>
   );

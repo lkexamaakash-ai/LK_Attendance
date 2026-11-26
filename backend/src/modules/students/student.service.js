@@ -11,10 +11,6 @@ class HttpError extends Error {
 
 const DAY = 24 * 60 * 60 * 1000;
 const EXPIRING_DAYS = 15;
-const PLANS = ["FULL", "DOWN_PAYMENT", "EMI"];
-const MODES = ["CASH", "UPI", "BANK_TRANSFER", "CHEQUE", "CARD"];
-const MODE_LABEL = { CASH: "Cash", UPI: "UPI", BANK_TRANSFER: "Bank transfer", CHEQUE: "Cheque", CARD: "Card" };
-const sum = (rows) => rows.reduce((t, r) => t + (r.amount || 0), 0);
 
 const getDefaultPassword = () => {
   const pass = process.env.DEFAULT_PASSWORD;
@@ -45,119 +41,56 @@ const statusOf = (daysLeft) => {
 };
 
 // ---------- shaping ----------
-const enrollmentInclude = {
-  batch: { include: { course: true } },
-  installments: { orderBy: { number: "asc" } },
-  payments: {
-    orderBy: [{ paidOn: "desc" }, { id: "desc" }],
-    include: { recordedBy: { select: { name: true } } },
-  },
-};
+const enrollmentInclude = { course: { include: { branch: true } } };
 
-// Works out fee totals, balance, status and installment progress for one enrollment.
-const paymentSummary = (e) => {
-  const today = todayIST();
-  const payments = e.payments || [];
-  const paid = sum(payments);
-  const balance = Math.max(0, (e.totalFee || 0) - paid);
-
-  const installments = (e.installments || []).map((i) => {
-    const got = sum(payments.filter((p) => p.installmentId === i.id));
-    let status = "PENDING";
-    if (got >= i.amount) status = "PAID";
-    else if (new Date(i.dueDate) < today) status = "OVERDUE";
-    else if (got > 0) status = "PARTIAL";
-    return {
-      id: i.id,
-      number: i.number,
-      dueDate: i.dueDate,
-      amount: i.amount,
-      paid: got,
-      balance: Math.max(0, i.amount - got),
-      status,
-    };
-  });
-
-  const nextInstallment = installments.find((i) => i.status !== "PAID");
-  let nextDue = null;
-  if (nextInstallment) nextDue = { date: nextInstallment.dueDate, amount: nextInstallment.balance };
-  else if (e.planType === "DOWN_PAYMENT" && e.balanceDueDate && balance > 0) {
-    nextDue = { date: e.balanceDueDate, amount: balance };
-  }
-
-  const overdue =
-    installments.some((i) => i.status === "OVERDUE") ||
-    (e.planType === "DOWN_PAYMENT" && e.balanceDueDate && balance > 0 && new Date(e.balanceDueDate) < today);
-
-  let paymentStatus = "PENDING";
-  if ((e.totalFee || 0) <= 0) paymentStatus = "NO_FEE";
-  else if (balance === 0) paymentStatus = "PAID";
-  else if (overdue) paymentStatus = "OVERDUE";
-  else if (paid > 0) paymentStatus = "PARTIAL";
-
-  return { paid, balance, paymentStatus, nextDue, installments };
-};
-
-const formatEnrollment = (e, withDetails = false) => {
-  if (!e) return null;
+const formatEnrollment = (e) => {
   const daysLeft = daysLeftOf(e.endDate);
-  const pay = paymentSummary(e);
-  const base = {
+  return {
     id: e.id,
-    batchId: e.batchId,
-    batchName: e.batch?.name,
-    courseId: e.batch?.courseId,
-    courseName: e.batch?.course?.name,
+    courseId: e.courseId,
+    courseName: e.course?.name,
+    branchId: e.course?.branchId,
+    branchName: e.course?.branch?.name,
     startDate: e.startDate,
     endDate: e.endDate,
-    totalFee: e.totalFee,
     daysLeft,
     status: statusOf(daysLeft),
-    planType: e.planType || null,
-    balanceDueDate: e.balanceDueDate || null,
-    paid: pay.paid,
-    balance: pay.balance,
-    paymentStatus: pay.paymentStatus,
-    nextDue: pay.nextDue,
-  };
-  if (!withDetails) return base;
-  const numberOf = new Map(pay.installments.map((i) => [i.id, i.number]));
-  return {
-    ...base,
-    installments: pay.installments,
-    payments: (e.payments || []).map((p) => ({
-      id: p.id,
-      amount: p.amount,
-      paidOn: p.paidOn,
-      mode: p.mode,
-      receiptNo: p.receiptNo,
-      note: p.note,
-      installmentId: p.installmentId,
-      installmentNumber: p.installmentId ? numberOf.get(p.installmentId) || null : null,
-      recordedBy: p.recordedBy?.name || null,
-    })),
   };
 };
 
-const formatStudent = (s) => ({
-  id: s.id,
-  userId: s.userId,
-  name: s.user?.name,
-  phoneNumber: s.user?.phoneNumber,
-  isActive: s.user?.isActive,
-  branchId: s.branchId,
-  branchName: s.branch?.name,
-  address: s.address,
-  email: s.email,
-  admissionDate: s.admissionDate,
-  currentEnrollment: formatEnrollment(s.enrollments?.[0]),
-});
+// viewerBranchId: a branch admin only sees the courses of their own branch.
+const formatStudent = (s, viewerBranchId = null) => {
+  const list = (s.enrollments || []).filter((e) => !viewerBranchId || e.course.branchId === viewerBranchId);
+  const enrollments = list
+    .slice()
+    .sort((a, b) => new Date(b.endDate) - new Date(a.endDate))
+    .map(formatEnrollment);
+
+  const branchNames = [...new Set(enrollments.map((e) => e.branchName))];
+  if (branchNames.length === 0 && s.branch?.name) branchNames.push(s.branch.name);
+
+  return {
+    id: s.id,
+    userId: s.userId,
+    name: s.user?.name,
+    phoneNumber: s.user?.phoneNumber,
+    isActive: s.user?.isActive,
+    branchId: s.branchId,
+    branchName: branchNames.join(", "),
+    branchNames,
+    address: s.address,
+    email: s.email,
+    admissionDate: s.admissionDate,
+    currentEnrollment: enrollments[0] || null, // the course that ends last
+    enrollments,
+  };
+};
 
 // ---------- access ----------
 const getRequester = async (userId) => {
   const me = await prisma.user.findUnique({
     where: { id: Number(userId) },
-    select: { id: true, role: true, branchId: true },
+    select: { id: true, name: true, role: true, branchId: true },
   });
   if (!me) throw new HttpError(401, "User not found");
   return me;
@@ -175,10 +108,24 @@ const branchScope = (me, requestedBranchId) => {
   throw new HttpError(403, "Access Denied");
 };
 
-const assertCanManage = (me, student) => {
-  if (me.role === "SUPER_ADMIN") return;
-  if (me.role === "BRANCH_ADMIN" && me.branchId === student.branchId) return;
-  throw new HttpError(403, "Access Denied");
+// A branch admin can manage a student who has a course in their branch (or whose home branch is theirs).
+const canManage = (me, student) => {
+  if (me.role === "SUPER_ADMIN") return true;
+  if (me.role !== "BRANCH_ADMIN" || !me.branchId) return false;
+  return (
+    student.branchId === me.branchId ||
+    (student.enrollments || []).some((e) => e.course.branchId === me.branchId)
+  );
+};
+
+const loadStudentFor = async (me, studentId) => {
+  const student = await prisma.student.findUnique({
+    where: { id: Number(studentId) },
+    include: { user: true, branch: true, enrollments: { include: enrollmentInclude } },
+  });
+  if (!student) throw new HttpError(404, "Student not found");
+  if (!canManage(me, student)) throw new HttpError(403, "Access Denied");
+  return student;
 };
 
 // ---------- validation ----------
@@ -188,12 +135,6 @@ const cleanPhone = (v) => {
   return phone;
 };
 
-const cleanFee = (v) => {
-  const fee = v === undefined || v === null || v === "" ? 0 : Number(v);
-  if (!Number.isInteger(fee) || fee < 0) throw new HttpError(400, "Total fee must be a whole number, 0 or more");
-  return fee;
-};
-
 const cleanPeriod = (startDate, endDate) => {
   const start = toDate(startDate, "Start date");
   const end = toDate(endDate, "End date");
@@ -201,160 +142,101 @@ const cleanPeriod = (startDate, endDate) => {
   return { start, end };
 };
 
-// ---------- payment plan (optional when adding a student) ----------
-const cleanMode = (v) => {
-  const mode = String(v || "").toUpperCase();
-  if (!MODES.includes(mode)) throw new HttpError(400, "Please choose how the payment was made (cash, UPI, bank transfer, cheque or card)");
-  return mode;
+// items: [{ courseId, startDate, endDate }] -> checked, with the course attached.
+const cleanCourseItems = async (me, items, { allowEmpty = false } = {}) => {
+  if (!Array.isArray(items) || (items.length === 0 && !allowEmpty)) {
+    throw new HttpError(400, "Please choose at least one course");
+  }
+  const seen = new Set();
+  const out = [];
+  for (const it of items) {
+    const courseId = Number(it.courseId);
+    if (!Number.isInteger(courseId)) throw new HttpError(400, "Course is not valid");
+    if (seen.has(courseId)) throw new HttpError(400, "The same course was chosen twice");
+    seen.add(courseId);
+    const { start, end } = cleanPeriod(it.startDate, it.endDate);
+    out.push({ courseId, start, end });
+  }
+  if (out.length === 0) return out;
+
+  const courses = await prisma.course.findMany({ where: { id: { in: out.map((o) => o.courseId) } } });
+  if (courses.length !== out.length) throw new HttpError(400, "One of the chosen courses was not found");
+  const byId = new Map(courses.map((c) => [c.id, c]));
+  for (const o of out) {
+    o.course = byId.get(o.courseId);
+    if (me.role === "BRANCH_ADMIN" && o.course.branchId !== me.branchId) {
+      throw new HttpError(403, "You can only add courses of your own branch");
+    }
+  }
+  return out;
 };
 
-const cleanPaidOn = (v) => {
-  const date = v ? toDate(v, "Payment date") : todayIST();
-  if (date > todayIST()) throw new HttpError(400, "Payment date cannot be in the future");
-  return date;
+const requireAdmin = (me) => {
+  if (!["SUPER_ADMIN", "BRANCH_ADMIN"].includes(me.role)) throw new HttpError(403, "Access Denied");
+  if (me.role === "BRANCH_ADMIN" && !me.branchId) throw new HttpError(403, "No branch is assigned to you");
 };
 
-const cleanMoney = (v, label) => {
-  const n = Number(v);
-  if (!Number.isInteger(n) || n <= 0) throw new HttpError(400, `${label} must be a whole number above 0`);
-  return n;
-};
-
-const buildPlan = (payment, totalFee) => {
-  const none = { planType: null, balanceDueDate: null, payments: [], installments: [] };
-  if (!payment || !payment.planType) return none;
-  if (!PLANS.includes(payment.planType)) throw new HttpError(400, "Payment plan is not valid");
-
-  const paidRaw = payment.paidNow?.amount;
-  const paidNow = paidRaw === undefined || paidRaw === null || paidRaw === "" ? 0 : Number(paidRaw);
-  if (!Number.isInteger(paidNow) || paidNow < 0) throw new HttpError(400, "Amount paid must be a whole number, 0 or more");
-  if (paidNow > totalFee) throw new HttpError(400, "Amount paid cannot be more than the total fee");
-
-  const payments = [];
-  if (paidNow > 0) {
-    payments.push({
-      amount: paidNow,
-      paidOn: cleanPaidOn(payment.paidNow.date),
-      mode: cleanMode(payment.paidNow.mode),
-      receiptNo: payment.paidNow.receiptNo ? String(payment.paidNow.receiptNo).trim() : null,
-      note: payment.paidNow.note ? String(payment.paidNow.note).trim() : null,
-    });
-  }
-
-  if (payment.planType === "FULL") {
-    if (totalFee > 0 && paidNow !== totalFee) throw new HttpError(400, "For a full payment, the amount paid must equal the total fee");
-    return { planType: "FULL", balanceDueDate: null, payments, installments: [] };
-  }
-
-  if (payment.planType === "DOWN_PAYMENT") {
-    if (!(paidNow > 0 && paidNow < totalFee)) throw new HttpError(400, "For a down payment, enter an amount above 0 and below the total fee");
-    const balanceDueDate = payment.balanceDueDate ? toDate(payment.balanceDueDate, "Balance due date") : null;
-    return { planType: "DOWN_PAYMENT", balanceDueDate, payments, installments: [] };
-  }
-
-  // EMI
-  const rows = Array.isArray(payment.installments) ? payment.installments : [];
-  if (rows.length < 1 || rows.length > 36) throw new HttpError(400, "Please add between 1 and 36 installments");
-  const remaining = totalFee - paidNow;
-  if (remaining <= 0) throw new HttpError(400, "There is nothing left to pay in installments");
-  const installments = rows.map((r, i) => ({
-    number: i + 1,
-    dueDate: toDate(r.dueDate, `Installment ${i + 1} due date`),
-    amount: cleanMoney(r.amount, `Installment ${i + 1} amount`),
-  }));
-  const total = sum(installments);
-  if (total !== remaining) {
-    throw new HttpError(400, `Installments add up to ₹${total}, but ₹${remaining} is left to pay after the amount paid now`);
-  }
-  return { planType: "EMI", balanceDueDate: null, payments, installments };
+// ---------- branches and courses to choose from ----------
+const getOptions = async (userId) => {
+  const me = await getRequester(userId);
+  requireAdmin(me);
+  return prisma.branch.findMany({
+    where: me.role === "SUPER_ADMIN" ? {} : { id: me.branchId },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      courses: { orderBy: { name: "asc" }, select: { id: true, name: true } },
+    },
+  });
 };
 
 // ---------- create ----------
-const createOne = async ({ branchId, batch, input, hashedPassword, recordedById }) => {
+const createOne = async ({ items, input, hashedPassword }) => {
   const name = String(input.name || "").trim();
   if (!name) throw new HttpError(400, "Name is required");
   const phoneNumber = cleanPhone(input.phoneNumber);
-  const { start, end } = cleanPeriod(input.startDate, input.endDate);
-  const totalFee = cleanFee(input.totalFee);
-  const admissionDate = input.admissionDate ? toDate(input.admissionDate, "Admission date") : start;
-
-  const plan = buildPlan(input.payment, totalFee);
+  const admissionDate = input.admissionDate ? toDate(input.admissionDate, "Admission date") : items[0].start;
 
   const exists = await prisma.user.findUnique({ where: { phoneNumber } });
   if (exists) throw new HttpError(409, "This phone number is already registered");
 
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
-      data: {
-        name,
-        phoneNumber,
-        password: hashedPassword,
-        role: "STUDENT",
-        mustChangePassword: true,
-      },
+      data: { name, phoneNumber, password: hashedPassword, role: "STUDENT", mustChangePassword: true },
     });
     const student = await tx.student.create({
       data: {
         userId: user.id,
-        branchId,
+        branchId: items[0].course.branchId, // home branch = branch of the first course
         admissionDate,
         address: input.address ? String(input.address).trim() : null,
         email: input.email ? String(input.email).trim() : null,
       },
     });
-    const enrollment = await tx.enrollment.create({
-      data: {
-        studentId: student.id,
-        batchId: batch.id,
-        startDate: start,
-        endDate: end,
-        totalFee,
-        planType: plan.planType,
-        balanceDueDate: plan.balanceDueDate,
-      },
-    });
-    for (const i of plan.installments) {
-      await tx.installment.create({ data: { enrollmentId: enrollment.id, ...i } });
+    for (const it of items) {
+      await tx.enrollment.create({
+        data: { studentId: student.id, courseId: it.courseId, startDate: it.start, endDate: it.end },
+      });
     }
-    for (const pay of plan.payments) {
-      await tx.payment.create({ data: { enrollmentId: enrollment.id, recordedById, ...pay } });
-    }
-    return { studentId: student.id, name, payments: plan.payments };
+    return { studentId: student.id, name };
   });
-};
-
-const loadBatchForBranch = async (batchId, branchId) => {
-  if (!batchId) throw new HttpError(400, "Batch is required");
-  const batch = await prisma.batch.findUnique({
-    where: { id: Number(batchId) },
-    include: { course: true },
-  });
-  if (!batch || batch.course.branchId !== branchId) {
-    throw new HttpError(400, "This batch does not belong to the selected branch");
-  }
-  return batch;
 };
 
 const createStudent = async (userId, input) => {
   const me = await getRequester(userId);
-  const branchId = branchScope(me, input.branchId);
-  if (!branchId) throw new HttpError(400, "Branch is required");
-
-  const batch = await loadBatchForBranch(input.batchId, branchId);
+  requireAdmin(me);
+  const items = await cleanCourseItems(me, input.courses);
   const hashedPassword = await bcrypt.hash(getDefaultPassword(), 10);
-  const created = await createOne({ branchId, batch, input, hashedPassword, recordedById: me.id });
-  for (const pay of created.payments) {
-    await createAuditLog({
-      userId: me.id,
-      action: "RECORD_PAYMENT",
-      entity: "PAYMENT",
-      entityId: created.studentId,
-      newData: { amount: pay.amount, mode: pay.mode, paidOn: pay.paidOn },
-      description: `Recorded payment of ₹${pay.amount} (${MODE_LABEL[pay.mode]}) for new student ${created.name}`,
-    });
-  }
+  const created = await createOne({ items, input, hashedPassword });
   return getProfile(userId, created.studentId);
 };
+
+const splitNames = (v) =>
+  String(v || "")
+    .split(/[,;\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 
 const bulkCreateStudents = async (userId, { branchId: requestedBranch, rows }) => {
   const me = await getRequester(userId);
@@ -363,12 +245,8 @@ const bulkCreateStudents = async (userId, { branchId: requestedBranch, rows }) =
   if (!Array.isArray(rows) || rows.length === 0) throw new HttpError(400, "No rows to import");
   if (rows.length > 500) throw new HttpError(400, "Please import at most 500 students at a time");
 
-  const batches = await prisma.batch.findMany({
-    where: { course: { branchId } },
-    include: { course: true },
-  });
-  const key = (course, batch) => `${String(course || "").trim().toLowerCase()}|${String(batch || "").trim().toLowerCase()}`;
-  const byName = new Map(batches.map((b) => [key(b.course.name, b.name), b]));
+  const courses = await prisma.course.findMany({ where: { branchId } });
+  const byName = new Map(courses.map((c) => [c.name.trim().toLowerCase(), c]));
   const hashedPassword = await bcrypt.hash(getDefaultPassword(), 10);
 
   const created = [];
@@ -377,29 +255,16 @@ const bulkCreateStudents = async (userId, { branchId: requestedBranch, rows }) =
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i] || {};
     try {
-      const batch = byName.get(key(row.courseName, row.batchName));
-      if (!batch) {
-        throw new HttpError(400, `Course "${row.courseName || ""}" with batch "${row.batchName || ""}" was not found in this branch`);
+      const names = splitNames(row.courseNames);
+      if (names.length === 0) throw new HttpError(400, "Course is required");
+      const { start, end } = cleanPeriod(row.startDate, row.endDate);
+      const items = [];
+      for (const n of names) {
+        const course = byName.get(n.toLowerCase());
+        if (!course) throw new HttpError(400, `Course "${n}" was not found in this branch`);
+        if (!items.some((x) => x.courseId === course.id)) items.push({ courseId: course.id, course, start, end });
       }
-      const amountPaid = row.amountPaid === undefined || row.amountPaid === null || row.amountPaid === "" ? 0 : Number(row.amountPaid);
-      let withPayment = row;
-      if (amountPaid > 0) {
-        if (!row.paymentMode) throw new HttpError(400, "Payment mode is required when an amount paid is given");
-        const fee = cleanFee(row.totalFee);
-        const when = row.admissionDate || row.startDate;
-        withPayment = {
-          ...row,
-          payment: {
-            planType: amountPaid >= fee ? "FULL" : "DOWN_PAYMENT",
-            paidNow: {
-              amount: amountPaid,
-              mode: String(row.paymentMode).trim().toUpperCase().replace(/[\s-]+/g, "_"),
-              date: String(when).slice(0, 10) > todayIST().toISOString().slice(0, 10) ? undefined : when,
-            },
-          },
-        };
-      }
-      await createOne({ branchId, batch, input: withPayment, hashedPassword, recordedById: me.id });
+      await createOne({ items, input: row, hashedPassword });
       created.push({ name: row.name, phoneNumber: row.phoneNumber });
     } catch (err) {
       errors.push({
@@ -417,7 +282,7 @@ const bulkCreateStudents = async (userId, { branchId: requestedBranch, rows }) =
 const profileInclude = {
   user: true,
   branch: true,
-  enrollments: { orderBy: { endDate: "desc" }, include: enrollmentInclude },
+  enrollments: { include: enrollmentInclude },
 };
 
 const getProfileOf = async (me, where) => {
@@ -425,14 +290,9 @@ const getProfileOf = async (me, where) => {
   if (!student) throw new HttpError(404, "Student not found");
 
   const isSelf = me.role === "STUDENT" && student.userId === me.id;
-  const isAdmin =
-    me.role === "SUPER_ADMIN" || (me.role === "BRANCH_ADMIN" && me.branchId === student.branchId);
-  if (!isSelf && !isAdmin) throw new HttpError(403, "Access Denied");
+  if (!isSelf && !canManage(me, student)) throw new HttpError(403, "Access Denied");
 
-  return {
-    ...formatStudent(student),
-    enrollments: student.enrollments.map((e) => formatEnrollment(e, true)),
-  };
+  return formatStudent(student, me.role === "BRANCH_ADMIN" ? me.branchId : null);
 };
 
 const getProfile = async (userId, studentId) => {
@@ -453,17 +313,24 @@ const listStudents = async (userId, { branchId, q, page = 1, pageSize = 25 }) =>
   const take = Math.min(Math.max(Number(pageSize) || 25, 1), 100);
   const pageNo = Math.max(Number(page) || 1, 1);
 
-  const where = {};
-  if (scope) where.branchId = scope;
+  const and = [];
+  if (scope) {
+    and.push({
+      OR: [{ branchId: scope }, { enrollments: { some: { course: { branchId: scope } } } }],
+    });
+  }
   const search = String(q || "").trim();
   if (search) {
-    where.user = {
-      OR: [
-        { name: { contains: search, mode: "insensitive" } },
-        { phoneNumber: { contains: search } },
-      ],
-    };
+    and.push({
+      user: {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { phoneNumber: { contains: search } },
+        ],
+      },
+    });
   }
+  const where = and.length ? { AND: and } : {};
 
   const [total, rows] = await Promise.all([
     prisma.student.count({ where }),
@@ -472,23 +339,18 @@ const listStudents = async (userId, { branchId, q, page = 1, pageSize = 25 }) =>
       orderBy: { createdAt: "desc" },
       skip: (pageNo - 1) * take,
       take,
-      include: {
-        user: true,
-        branch: true,
-        enrollments: { orderBy: { endDate: "desc" }, take: 1, include: enrollmentInclude },
-      },
+      include: profileInclude,
     }),
   ]);
 
-  return { items: rows.map(formatStudent), total, page: pageNo, pageSize: take };
+  return { items: rows.map((s) => formatStudent(s, scope)), total, page: pageNo, pageSize: take };
 };
 
 // ---------- update ----------
 const updateStudent = async (userId, studentId, input) => {
   const me = await getRequester(userId);
-  const student = await prisma.student.findUnique({ where: { id: Number(studentId) } });
-  if (!student) throw new HttpError(404, "Student not found");
-  assertCanManage(me, student);
+  requireAdmin(me);
+  const student = await loadStudentFor(me, studentId);
 
   const userData = {};
   if (input.name !== undefined) {
@@ -517,117 +379,39 @@ const updateStudent = async (userId, studentId, input) => {
   return getProfile(userId, student.id);
 };
 
-const updateEnrollment = async (userId, studentId, enrollmentId, input) => {
+// Sets the courses of a student: adds new ones, updates dates of existing ones and removes the ones left out.
+// A branch admin only changes courses of their own branch; a super admin changes all of them.
+const setEnrollments = async (userId, studentId, input) => {
   const me = await getRequester(userId);
-  const student = await prisma.student.findUnique({ where: { id: Number(studentId) } });
-  if (!student) throw new HttpError(404, "Student not found");
-  assertCanManage(me, student);
+  requireAdmin(me);
+  const student = await loadStudentFor(me, studentId);
+  const items = await cleanCourseItems(me, input.courses, { allowEmpty: true });
 
-  const enrollment = await prisma.enrollment.findUnique({ where: { id: Number(enrollmentId) } });
-  if (!enrollment || enrollment.studentId !== student.id) throw new HttpError(404, "Enrollment not found");
+  const inScope = (e) => me.role === "SUPER_ADMIN" || e.course.branchId === me.branchId;
+  const keep = new Set(items.map((i) => i.courseId));
+  const existing = student.enrollments.filter(inScope);
+  const removed = existing.filter((e) => !keep.has(e.courseId));
+  const addedIds = items.filter((i) => !student.enrollments.some((e) => e.courseId === i.courseId)).map((i) => i.courseId);
 
-  const data = {};
-  if (input.batchId !== undefined) {
-    const batch = await loadBatchForBranch(input.batchId, student.branchId);
-    data.batchId = batch.id;
-  }
-  const start = input.startDate ? toDate(input.startDate, "Start date") : enrollment.startDate;
-  const end = input.endDate ? toDate(input.endDate, "End date") : enrollment.endDate;
-  if (end < start) throw new HttpError(400, "End date cannot be before the start date");
-  if (input.startDate) data.startDate = start;
-  if (input.endDate) data.endDate = end;
-  if (input.totalFee !== undefined) {
-    const fee = cleanFee(input.totalFee);
-    const already = await prisma.payment.findMany({ where: { enrollmentId: enrollment.id } });
-    if (fee < sum(already)) {
-      throw new HttpError(400, `Total fee cannot be less than the ₹${sum(already)} already paid`);
-    }
-    data.totalFee = fee;
-  }
-
-  await prisma.enrollment.update({ where: { id: enrollment.id }, data });
-  return getProfile(userId, student.id);
-};
-
-// ---------- payments ----------
-const loadEnrollmentForPayment = async (userId, studentId, enrollmentId) => {
-  const me = await getRequester(userId);
-  const student = await prisma.student.findUnique({ where: { id: Number(studentId) }, include: { user: true } });
-  if (!student) throw new HttpError(404, "Student not found");
-  assertCanManage(me, student);
-  const enrollment = await prisma.enrollment.findUnique({
-    where: { id: Number(enrollmentId) },
-    include: { installments: true, payments: true },
-  });
-  if (!enrollment || enrollment.studentId !== student.id) throw new HttpError(404, "Enrollment not found");
-  return { me, student, enrollment };
-};
-
-const recordPayment = async (userId, studentId, enrollmentId, input) => {
-  const { me, student, enrollment } = await loadEnrollmentForPayment(userId, studentId, enrollmentId);
-
-  const amount = cleanMoney(input.amount, "Amount");
-  const mode = cleanMode(input.mode);
-  const paidOn = cleanPaidOn(input.paidOn);
-
-  const summary = paymentSummary(enrollment);
-  if (amount > summary.balance) {
-    throw new HttpError(400, `Amount is more than the balance of ₹${summary.balance}`);
-  }
-
-  let installmentId = null;
-  if (input.installmentId) {
-    const inst = summary.installments.find((i) => i.id === Number(input.installmentId));
-    if (!inst) throw new HttpError(400, "That installment does not belong to this course period");
-    if (amount > inst.balance) throw new HttpError(400, `Amount is more than the ₹${inst.balance} left on installment ${inst.number}`);
-    installmentId = inst.id;
-  }
-
-  const payment = await prisma.payment.create({
-    data: {
-      enrollmentId: enrollment.id,
-      installmentId,
-      amount,
-      paidOn,
-      mode,
-      receiptNo: input.receiptNo ? String(input.receiptNo).trim() : null,
-      note: input.note ? String(input.note).trim() : null,
-      recordedById: me.id,
-    },
-  });
+  await prisma.$transaction([
+    ...removed.map((e) => prisma.enrollment.delete({ where: { id: e.id } })),
+    ...items.map((i) =>
+      prisma.enrollment.upsert({
+        where: { studentId_courseId: { studentId: student.id, courseId: i.courseId } },
+        update: { startDate: i.start, endDate: i.end },
+        create: { studentId: student.id, courseId: i.courseId, startDate: i.start, endDate: i.end },
+      }),
+    ),
+  ]);
 
   await createAuditLog({
     userId: me.id,
-    action: "RECORD_PAYMENT",
-    entity: "PAYMENT",
-    entityId: payment.id,
-    newData: { studentId: student.id, amount, mode, paidOn, installmentId },
-    description: `Recorded payment of ₹${amount} (${MODE_LABEL[mode]}) for ${student.user.name}`,
-  });
-
-  return getProfile(userId, student.id);
-};
-
-const deletePayment = async (userId, studentId, enrollmentId, paymentId) => {
-  const { me, student, enrollment } = await loadEnrollmentForPayment(userId, studentId, enrollmentId);
-  const payment = enrollment.payments.find((p) => p.id === Number(paymentId));
-  if (!payment) throw new HttpError(404, "Payment not found");
-
-  await prisma.payment.delete({ where: { id: payment.id } });
-
-  await createAuditLog({
-    userId: me.id,
-    action: "DELETE_PAYMENT",
-    entity: "PAYMENT",
-    entityId: payment.id,
-    oldData: {
-      studentId: student.id,
-      amount: payment.amount,
-      mode: payment.mode,
-      paidOn: payment.paidOn,
-      receiptNo: payment.receiptNo,
-    },
-    description: `Deleted payment of ₹${payment.amount} (${MODE_LABEL[payment.mode]}) for ${student.user.name}`,
+    action: "UPDATE",
+    entity: "StudentCourses",
+    entityId: student.id,
+    oldData: { courses: existing.map((e) => e.course.name) },
+    newData: { courseIds: items.map((i) => i.courseId), added: addedIds, removed: removed.map((e) => e.courseId) },
+    description: `${me.name} updated the courses of student ${student.user.name}`,
   });
 
   return getProfile(userId, student.id);
@@ -635,13 +419,12 @@ const deletePayment = async (userId, studentId, enrollmentId, paymentId) => {
 
 module.exports = {
   HttpError,
+  getOptions,
   createStudent,
   bulkCreateStudents,
   listStudents,
   getProfile,
   getMe,
   updateStudent,
-  updateEnrollment,
-  recordPayment,
-  deletePayment,
+  setEnrollments,
 };

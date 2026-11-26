@@ -119,18 +119,20 @@ const listLectures = async (userId, query) => {
     : [];
   const markedMap = Object.fromEntries(marked.map((m) => [m.lectureId, m._count._all]));
 
-  const enrolled = lectures.length
+  // students are enrolled in courses (they can attend any batch of the course)
+  const courseIds = [...new Set(lectures.map((l) => l.batch.course.id))];
+  const enrolled = courseIds.length
     ? await prisma.enrollment.groupBy({
-        by: ["batchId"],
-        where: { batchId: { in: [...new Set(lectures.map((l) => l.batchId))] } },
+        by: ["courseId"],
+        where: { courseId: { in: courseIds } },
         _count: { _all: true },
       })
     : [];
-  const enrolledMap = Object.fromEntries(enrolled.map((e) => [e.batchId, e._count._all]));
+  const enrolledMap = Object.fromEntries(enrolled.map((e) => [e.courseId, e._count._all]));
 
   return lectures.map((l) => ({
     ...shapeLecture(l),
-    studentCount: enrolledMap[l.batchId] || 0,
+    studentCount: enrolledMap[l.batch.course.id] || 0,
     markedCount: markedMap[l.id] || 0,
   }));
 };
@@ -142,14 +144,14 @@ const getSheet = async (userId, query) => {
   const lecture = await loadLectureFor(actor, query.lectureId);
 
   const enrollments = await prisma.enrollment.findMany({
-    where: { batchId: lecture.batchId },
+    where: { courseId: lecture.batch.course.id },
     select: {
       studentId: true,
       student: { select: { id: true, user: { select: { name: true, phoneNumber: true } } } },
     },
   });
 
-  // a student could in theory have two enrollments in the same batch (different periods) - list once
+  // every student enrolled in the lecture's course is listed, whichever batch they usually attend
   const seen = new Set();
   const students = [];
   for (const e of enrollments) {
@@ -201,15 +203,15 @@ const saveAttendance = async (userId, body) => {
     }
   }
 
-  // every student must really be enrolled in this lecture's batch
+  // every student must really be enrolled in this lecture's course
   const enrolled = await prisma.enrollment.findMany({
-    where: { batchId: lecture.batchId },
+    where: { courseId: lecture.batch.course.id },
     select: { studentId: true },
   });
   const enrolledIds = new Set(enrolled.map((e) => e.studentId));
   for (const r of records) {
     if (!enrolledIds.has(Number(r.studentId))) {
-      throw new HttpError(400, `Student ${r.studentId} is not enrolled in this batch`);
+      throw new HttpError(400, `Student ${r.studentId} is not enrolled in this course`);
     }
   }
 
@@ -283,7 +285,7 @@ const batchSummary = async (userId, batchId, query) => {
     select: { studentId: true, status: true },
   });
   const enrollments = await prisma.enrollment.findMany({
-    where: { batchId: batch.id },
+    where: { courseId: batch.courseId },
     select: { student: { select: { id: true, user: { select: { name: true } } } } },
   });
 

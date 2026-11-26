@@ -14,22 +14,13 @@ const handle = (fn, successStatus = 200) => async (req, res) => {
   }
 };
 
+const options = handle((req) => service.getOptions(req.user.id));
 const create = handle((req) => service.createStudent(req.user.id, req.body), 201);
 const bulkCreate = handle((req) => service.bulkCreateStudents(req.user.id, req.body), 201);
 const list = handle((req) => service.listStudents(req.user.id, req.query));
 const me = handle((req) => service.getMe(req.user.id));
 const getOne = handle((req) => service.getProfile(req.user.id, req.params.id));
 const update = handle((req) => service.updateStudent(req.user.id, req.params.id, req.body));
-const updateEnrollment = handle((req) =>
-  service.updateEnrollment(req.user.id, req.params.id, req.params.enrollmentId, req.body),
-);
+const setEnrollments = handle((req) => service.setEnrollments(req.user.id, req.params.id, req.body));
 
-const addPayment = handle(
-  (req) => service.recordPayment(req.user.id, req.params.id, req.params.enrollmentId, req.body),
-  201,
-);
-const removePayment = handle((req) =>
-  service.deletePayment(req.user.id, req.params.id, req.params.enrollmentId, req.params.paymentId),
-);
-
-module.exports = { addPayment, removePayment, create, bulkCreate, list, me, getOne, update, updateEnrollment };
+module.exports = { options, create, bulkCreate, list, me, getOne, update, setEnrollments };

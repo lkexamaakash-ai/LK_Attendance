@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import StudentEditModal from "./StudentEditModal";
-import StudentFees from "./StudentFees";
-import { DaysBadge, api, errorText, formatDate, initialsOf, money } from "./shared";
+import { DaysBadge, api, errorText, formatDate, initialsOf } from "./shared";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -37,6 +36,12 @@ export const DaysHero = ({ enrollment }) => {
       }`}
     >
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-300">Course validity</p>
+      {enrollment.courseName && (
+        <p className="mt-1 text-sm font-medium text-white">
+          {enrollment.courseName}
+          {enrollment.branchName ? <span className="text-maroon-200"> · {enrollment.branchName}</span> : null}
+        </p>
+      )}
       <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-5xl font-semibold leading-none">
@@ -96,7 +101,7 @@ const StudentProfileView = ({ mode, studentId, backPath, children }) => {
   if (loading && !student) return <p className="m-6 text-sm text-slate-500">Loading profile...</p>;
   if (!student) return <p className="m-6 text-sm text-slate-500">Profile not found.</p>;
 
-  const cur = student.currentEnrollment;
+  const enrollments = student.enrollments || [];
 
   return (
     <>
@@ -132,70 +137,45 @@ const StudentProfileView = ({ mode, studentId, backPath, children }) => {
           )}
         </div>
 
-        <DaysHero enrollment={cur} />
+        {enrollments.length === 0 ? (
+          <DaysHero enrollment={null} />
+        ) : (
+          enrollments.map((e) => <DaysHero key={e.id} enrollment={e} />)
+        )}
 
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-stone-200 p-5">
-            <h3 className="mb-4 text-base font-semibold text-slate-900">Current course</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <Info label="Course" value={cur?.courseName} />
-              <Info label="Batch" value={cur?.batchName} />
-              <Info label="Starts" value={formatDate(cur?.startDate)} />
-              <Info label="Ends" value={formatDate(cur?.endDate)} />
-              <Info label="Total fee" value={cur ? money(cur.totalFee) : "-"} />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</p>
-                <div className="mt-1"><DaysBadge enrollment={cur} /></div>
-              </div>
-            </div>
+            <h3 className="mb-4 text-base font-semibold text-slate-900">Courses</h3>
+            {enrollments.length === 0 ? (
+              <p className="text-sm text-slate-500">No course has been added yet.</p>
+            ) : (
+              <ul className="space-y-3">
+                {enrollments.map((e) => (
+                  <li key={e.id} className="flex flex-wrap items-start justify-between gap-2 border-b border-stone-100 pb-3 last:border-b-0 last:pb-0">
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{e.courseName}</p>
+                      <p className="text-xs text-slate-500">
+                        {e.branchName} · {formatDate(e.startDate)} – {formatDate(e.endDate)}
+                      </p>
+                    </div>
+                    <DaysBadge enrollment={e} />
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="rounded-2xl border border-stone-200 p-5">
             <h3 className="mb-4 text-base font-semibold text-slate-900">Student details</h3>
             <div className="grid grid-cols-2 gap-4">
               <Info label="Admission date" value={formatDate(student.admissionDate)} />
-              <Info label="Branch" value={student.branchName} />
+              <Info label={student.branchNames?.length > 1 ? "Branches" : "Branch"} value={student.branchName} />
               <Info label="Phone" value={student.phoneNumber} />
               <Info label="Email" value={student.email} />
               <div className="col-span-2"><Info label="Address" value={student.address} /></div>
             </div>
           </div>
         </div>
-
-        <StudentFees
-          student={student}
-          enrollment={student.enrollments?.[0]}
-          isAdmin={mode === "admin"}
-          onChanged={load}
-        />
-
-        {student.enrollments?.length > 1 && (
-          <div className="rounded-2xl border border-stone-200 p-5">
-            <h3 className="mb-3 text-base font-semibold text-slate-900">Course history</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[520px] text-left text-sm">
-                <thead className="bg-maroon-50 text-xs uppercase tracking-wide text-maroon-800">
-                  <tr>
-                    <th className="px-3 py-2 font-semibold">Course</th>
-                    <th className="px-3 py-2 font-semibold">Batch</th>
-                    <th className="px-3 py-2 font-semibold">Period</th>
-                    <th className="px-3 py-2 font-semibold">Fee</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {student.enrollments.map((e) => (
-                    <tr key={e.id} className="border-t border-stone-100 text-slate-700">
-                      <td className="px-3 py-2">{e.courseName}</td>
-                      <td className="px-3 py-2">{e.batchName}</td>
-                      <td className="px-3 py-2">{formatDate(e.startDate)} – {formatDate(e.endDate)}</td>
-                      <td className="px-3 py-2">{money(e.totalFee)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
         {children}
       </div>

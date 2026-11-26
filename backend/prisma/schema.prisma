@@ -48,7 +48,6 @@ model User {
   branch                 Branch?                 @relation(fields: [branchId], references: [id])
   facultyBranches        facultyBranch[]
   student                Student?
-  paymentsRecorded       Payment[]               @relation("PaymentRecordedBy")
   studentAttendanceMarked StudentAttendance[]    @relation("StudentAttendanceMarkedBy")
 }
 
@@ -159,7 +158,6 @@ model Batch {
   historicalData   HistoricalFacultyData[]
   lectureSchedules LectureSchedule[]
   subjects         Subject[]
-  enrollments      Enrollment[]
   studentAttendances StudentAttendance[]
 
   @@unique([name, courseId])
@@ -172,6 +170,7 @@ model Course {
   branchId  Int
   createdAt DateTime @default(now())
   batches   Batch[]
+  enrollments Enrollment[]
   branch    Branch   @relation(fields: [branchId], references: [id])
 
   @@unique([name, branchId])
@@ -246,20 +245,6 @@ enum StatusType {
   MISSED
 }
 
-enum PaymentPlan {
-  FULL
-  DOWN_PAYMENT
-  EMI
-}
-
-enum PaymentMode {
-  CASH
-  UPI
-  BANK_TRANSFER
-  CHEQUE
-  CARD
-}
-
 enum Role {
   SUPER_ADMIN
   BRANCH_ADMIN
@@ -297,55 +282,18 @@ model Student {
 model Enrollment {
   id        Int      @id @default(autoincrement())
   studentId Int
-  batchId   Int
+  courseId  Int
   startDate DateTime @db.Date
   endDate   DateTime @db.Date
-  totalFee  Int      @default(0)
-  planType       PaymentPlan?
-  balanceDueDate DateTime?    @db.Date
   createdAt DateTime @default(now())
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  batch     Batch    @relation(fields: [batchId], references: [id])
-  installments   Installment[]
-  payments       Payment[]
+  course    Course   @relation(fields: [courseId], references: [id])
 
+  @@unique([studentId, courseId])
   @@index([studentId])
+  @@index([courseId])
   @@index([endDate])
 }
-
-model Installment {
-  id           Int        @id @default(autoincrement())
-  enrollmentId Int
-  number       Int
-  dueDate      DateTime   @db.Date
-  amount       Int
-  createdAt    DateTime   @default(now())
-  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  payments     Payment[]
-
-  @@index([enrollmentId])
-  @@index([dueDate])
-}
-
-model Payment {
-  id            Int          @id @default(autoincrement())
-  enrollmentId  Int
-  installmentId Int?
-  amount        Int
-  paidOn        DateTime     @db.Date
-  mode          PaymentMode
-  receiptNo     String?
-  note          String?
-  recordedById  Int?
-  createdAt     DateTime     @default(now())
-  enrollment    Enrollment   @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  installment   Installment? @relation(fields: [installmentId], references: [id], onDelete: SetNull)
-  recordedBy    User?        @relation("PaymentRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
-
-  @@index([enrollmentId])
-  @@index([installmentId])
-}
-
 
 enum StudentAttendanceStatus {
   PRESENT
