@@ -417,8 +417,60 @@ const setEnrollments = async (userId, studentId, input) => {
   return getProfile(userId, student.id);
 };
 
+// Deletes a student.
+// Super admin: the student is deleted completely (login, courses and attendance).
+// Branch admin: if the student also has courses in another branch, they are only removed from this
+// branch (their courses and attendance here); otherwise the student is deleted completely.
+const deleteStudent = async (userId, studentId) => {
+  const me = await getRequester(userId);
+  requireAdmin(me);
+  const student = await loadStudentFor(me, studentId);
+
+  const otherBranchCourses =
+    me.role === "BRANCH_ADMIN"
+      ? student.enrollments.filter((e) => e.course.branchId !== me.branchId)
+      : [];
+
+  if (otherBranchCourses.length > 0) {
+    await prisma.$transaction([
+      prisma.studentAttendance.deleteMany({
+        where: { studentId: student.id, batch: { course: { branchId: me.branchId } } },
+      }),
+      prisma.enrollment.deleteMany({
+        where: { studentId: student.id, course: { branchId: me.branchId } },
+      }),
+    ]);
+    await createAuditLog({
+      userId: me.id,
+      action: "DELETE",
+      entity: "StudentBranch",
+      entityId: student.id,
+      oldData: { name: student.user.name, phoneNumber: student.user.phoneNumber },
+      description: `${me.name} removed student ${student.user.name} from their branch`,
+    });
+    return { deleted: false, removedFromBranch: true, name: student.user.name };
+  }
+
+  await prisma.$transaction([
+    prisma.studentAttendance.deleteMany({ where: { studentId: student.id } }),
+    prisma.enrollment.deleteMany({ where: { studentId: student.id } }),
+    prisma.student.delete({ where: { id: student.id } }),
+    prisma.user.delete({ where: { id: student.userId } }),
+  ]);
+  await createAuditLog({
+    userId: me.id,
+    action: "DELETE",
+    entity: "Student",
+    entityId: student.id,
+    oldData: { name: student.user.name, phoneNumber: student.user.phoneNumber },
+    description: `${me.name} deleted student ${student.user.name}`,
+  });
+  return { deleted: true, removedFromBranch: false, name: student.user.name };
+};
+
 module.exports = {
   HttpError,
+  deleteStudent,
   getOptions,
   createStudent,
   bulkCreateStudents,

@@ -21,6 +21,7 @@ router.get("/me", protect, requireRole("STUDENT"), controller.me);
 // Profile: admins of the right branch, or the student themselves (checked in the service)
 router.get("/:id", protect, requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "STUDENT"), controller.getOne);
 router.put("/:id", protect, admins, controller.update);
+router.delete("/:id", protect, admins, controller.remove);
 
 // Courses of a student (add, change dates, remove)
 router.put("/:id/enrollments", protect, admins, controller.setEnrollments);

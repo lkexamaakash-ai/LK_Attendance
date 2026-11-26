@@ -1,9 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import DeleteStudentModal from "./DeleteStudentModal";
 import StudentEditModal from "./StudentEditModal";
 import { DaysBadge, api, errorText, formatDate, initialsOf } from "./shared";
 
@@ -81,6 +82,7 @@ const StudentProfileView = ({ mode, studentId, backPath, children }) => {
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showEdit, setShowEdit] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -131,9 +133,18 @@ const StudentProfileView = ({ mode, studentId, backPath, children }) => {
             </div>
           </div>
           {mode === "admin" && (
-            <Button variant="outline" className="cursor-pointer" onClick={() => setShowEdit(true)}>
-              <Pencil className="size-4" /> Edit
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" className="cursor-pointer" onClick={() => setShowEdit(true)}>
+                <Pencil className="size-4" /> Edit
+              </Button>
+              <Button
+                variant="outline"
+                className="cursor-pointer border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={() => setShowDelete(true)}
+              >
+                <Trash2 className="size-4" /> Delete
+              </Button>
+            </div>
           )}
         </div>
 
@@ -188,6 +199,14 @@ const StudentProfileView = ({ mode, studentId, backPath, children }) => {
             setShowEdit(false);
             load();
           }}
+        />
+      )}
+
+      {showDelete && (
+        <DeleteStudentModal
+          student={student}
+          onClose={() => setShowDelete(false)}
+          onDeleted={() => router.push(backPath)}
         />
       )}
     </>

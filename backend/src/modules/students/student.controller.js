@@ -21,6 +21,7 @@ const list = handle((req) => service.listStudents(req.user.id, req.query));
 const me = handle((req) => service.getMe(req.user.id));
 const getOne = handle((req) => service.getProfile(req.user.id, req.params.id));
 const update = handle((req) => service.updateStudent(req.user.id, req.params.id, req.body));
+const remove = handle((req) => service.deleteStudent(req.user.id, req.params.id));
 const setEnrollments = handle((req) => service.setEnrollments(req.user.id, req.params.id, req.body));
 
-module.exports = { options, create, bulkCreate, list, me, getOne, update, setEnrollments };
+module.exports = { options, create, bulkCreate, list, me, getOne, update, setEnrollments, remove };
