@@ -120,10 +120,10 @@ const Login = () => {
         </p>
       }
     >
-      <form onSubmit={handleLogin} className="space-y-4" noValidate>
+      <form onSubmit={handleLogin} className="space-y-6" noValidate>
         <fieldset>
-          <legend className="mb-1.5 text-sm font-medium text-slate-700">Login as</legend>
-          <div className="grid grid-cols-2 gap-2">
+          <legend className="mb-2 text-base font-medium text-slate-700">Login as</legend>
+          <div className="grid grid-cols-2 gap-3">
             {TYPES.map(({ value, label, icon: Icon }) => (
               <label key={value} className="cursor-pointer">
                 <input
@@ -138,8 +138,8 @@ const Login = () => {
                   }}
                   className="peer sr-only"
                 />
-                <span className="flex items-center gap-2 rounded-lg border border-stone-300 px-2.5 py-2.5 text-[13px] text-slate-700 sm:px-3 sm:text-sm transition peer-checked:border-maroon-700 peer-checked:bg-maroon-50 peer-checked:font-semibold peer-checked:text-maroon-800 peer-focus-visible:ring-2 peer-focus-visible:ring-gold-400 hover:border-maroon-300">
-                  <Icon className="size-4 shrink-0" />
+                <span className="flex items-center gap-2 rounded-xl border border-stone-300 px-3 py-4 text-base text-slate-700 sm:px-4 sm:text-lg transition peer-checked:border-maroon-700 peer-checked:bg-maroon-50 peer-checked:font-semibold peer-checked:text-maroon-800 peer-focus-visible:ring-2 peer-focus-visible:ring-gold-400 hover:border-maroon-300">
+                  <Icon className="size-5 shrink-0 sm:size-6" />
                   {label}
                 </span>
               </label>
@@ -148,7 +148,7 @@ const Login = () => {
         </fieldset>
 
         <div>
-          <label htmlFor="phone" className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label htmlFor="phone" className="mb-2 block text-base font-medium text-slate-700">
             Phone number
           </label>
           <Input
@@ -157,7 +157,7 @@ const Login = () => {
             inputMode="numeric"
             autoComplete="username"
             maxLength={10}
-            className="h-11"
+            className="h-14 text-lg md:text-lg"
             value={phoneNumber}
             onChange={(e) => {
               setPhoneNumber(e.target.value.replace(/\D/g, ""));
@@ -168,7 +168,7 @@ const Login = () => {
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label htmlFor="password" className="mb-2 block text-base font-medium text-slate-700">
             Password
           </label>
           <div className="relative">
@@ -176,7 +176,7 @@ const Login = () => {
               id="password"
               type={showPass ? "text" : "password"}
               autoComplete="current-password"
-              className="h-11 pr-11"
+              className="h-14 pr-12 text-lg md:text-lg"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
@@ -188,34 +188,34 @@ const Login = () => {
               type="button"
               onClick={() => setShowPass(!showPass)}
               aria-label={showPass ? "Hide password" : "Show password"}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-maroon-700"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-maroon-700"
             >
-              {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+              {showPass ? <EyeOff size={22} /> : <Eye size={22} />}
             </button>
           </div>
           <button
             type="button"
             onClick={() => setShowReset((v) => !v)}
-            className="mt-1.5 cursor-pointer text-xs font-medium text-maroon-700 hover:text-maroon-800"
+            className="mt-2 cursor-pointer text-sm font-medium text-maroon-700 hover:text-maroon-800 sm:text-base"
           >
             Forgot password?
           </button>
           {showReset && (
-            <p className="mt-1.5 rounded-lg bg-stone-50 px-3 py-2 text-xs text-slate-600">{current.reset}</p>
+            <p className="mt-2 rounded-lg bg-stone-50 px-4 py-3 text-sm text-slate-600 sm:text-base">{current.reset}</p>
           )}
         </div>
 
         {error && (
-          <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
-            <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+          <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-base text-red-700">
+            <TriangleAlert className="mt-0.5 size-5 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <Button type="submit" disabled={loading} className="mt-1 h-11 w-full cursor-pointer text-base">
+        <Button type="submit" disabled={loading} className="mt-2 h-14 w-full cursor-pointer text-lg sm:text-xl">
           {loading ? (
             <>
-              <Loader2 className="size-4 animate-spin" /> Logging in...
+              <Loader2 className="size-5 animate-spin" /> Logging in...
             </>
           ) : (
             "Log in"
