@@ -488,6 +488,7 @@ const firstLoginPassword = async (userId, newPassword) => {
       password: hashedPassword,
       mustChangePassword: false,
     },
+    include: { branch: true },
   });
 
   return {
@@ -498,6 +499,8 @@ const firstLoginPassword = async (userId, newPassword) => {
       phoneNumber: updated.phoneNumber,
       role: updated.role,
       branchId: updated.branchId,
+      branch: updated.branch,
+      type: updated.facultyType,
       mustChangePassword: updated.mustChangePassword,
     },
   };

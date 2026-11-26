@@ -52,7 +52,8 @@ const SetPassword = () => {
       );
 
       // keep the same shape the rest of the app expects (stored.data.token / stored.data.user)
-      stored.data = { ...stored.data, ...data.data };
+      // keep what login already stored (branch, faculty branches...) and only update what changed
+      stored.data = { ...stored.data, ...data.data, user: { ...stored.data.user, ...data.data.user } };
       localStorage.setItem("user", JSON.stringify(stored));
 
       toast.success("Password set successfully");
