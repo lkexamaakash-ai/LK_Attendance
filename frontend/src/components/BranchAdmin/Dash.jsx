@@ -2,11 +2,9 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { mainRoute } from "../apiroute";
-import Audit from "../superAdmin/Models/Audit";
 import StatCard from "../layout/StatCard";
 import LectureOverviewChart from "../chart/LectureOverviewChart";
 import {
-  Activity,
   Briefcase,
   Building2,
   CircleCheck,
@@ -23,8 +21,6 @@ const Dash = () => {
   const [lecture, setLecture] = useState([]);
   const [branchData, setBranchData] = useState({});
   const [batches, setBatches] = useState([]);
-  const [logs, setLogs] = useState([]);
-  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     let tokn = JSON.parse(localStorage.getItem("user"));
@@ -73,21 +69,8 @@ const Dash = () => {
       setBatches(bat);
     };
 
-    const fetchAuditLogs = async () => {
-      let tok = JSON.parse(localStorage.getItem("user"));
-      let token = tok.data.token;
-
-      const { data } = await axios.get(`${mainRoute}/api/audit`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setLogs(data.data);
-    };
 
     loadData();
-    fetchAuditLogs();
   }, []);
 
   const countAttendance = (fn) =>
@@ -128,24 +111,6 @@ const Dash = () => {
             {batches?.length || 0}
           </StatCard>
 
-          <div
-            onClick={() => setOpen(true)}
-            className="flex cursor-pointer items-center gap-4 rounded-xl border border-maroon-700 bg-gradient-to-br from-maroon-700 to-maroon-900 p-5 text-white shadow-sm transition-shadow hover:shadow-md"
-          >
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-white/15 text-gold-300">
-              <Activity className="size-6" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gold-300">
-                Activity Logs
-              </p>
-              <p className="mt-0.5 line-clamp-2 text-sm text-maroon-100">
-                {logs.length > 0
-                  ? `${logs[0].user.name} - ${logs[0].description}`
-                  : "No activity yet"}
-              </p>
-            </div>
-          </div>
         </div>
 
         <LectureOverviewChart
@@ -154,7 +119,6 @@ const Dash = () => {
           penalties={countAttendance((att) => att.penalty && att.penalty !== "NONE")}
         />
       </div>
-      {open && <Audit open={open} setOpen={setOpen} logs={logs} />}
     </>
   );
 };

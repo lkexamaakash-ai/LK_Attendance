@@ -15,7 +15,6 @@ const coursesRoute = require("./modules/courses/courses.route");
 const uploadRoute = require("./modules/upload/upload.route");
 const uploadStaffRoute = require("./modules/staffUpload/staffUpload.route");
 const generateReportRoute = require("./modules/report/report.route");
-const auditRoute = require("./modules/audit/audit.route");
 const studentRoute = require("./modules/students/student.route");
 const studentAttendanceRoute = require("./modules/studentAttendance/studentAttendance.route");
 const morgan = require("morgan");
@@ -56,7 +55,6 @@ app.use("/api/courses", coursesRoute);
 app.use("/api/upload", uploadRoute);
 app.use("/api/uploadStaff", uploadStaffRoute);
 app.use("/api/report", generateReportRoute);
-app.use("/api/audit",auditRoute);
 app.use("/api/students", studentRoute);
 app.use("/api/studentAttendance", studentAttendanceRoute);
 
