@@ -283,8 +283,8 @@ model Enrollment {
   id        Int      @id @default(autoincrement())
   studentId Int
   courseId  Int
-  startDate DateTime @db.Date
-  endDate   DateTime @db.Date
+  startDate DateTime? @db.Date
+  endDate   DateTime? @db.Date
   createdAt DateTime @default(now())
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   course    Course   @relation(fields: [courseId], references: [id])

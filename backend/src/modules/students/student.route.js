@@ -13,6 +13,9 @@ router.get("/options", protect, admins, controller.options);
 // Admin: add students (super admin: any branch, branch admin: own branch only)
 router.post("/", protect, admins, controller.create);
 router.post("/bulk", protect, admins, controller.bulkCreate);
+router.post("/bulk-courses", protect, admins, controller.bulkAssignCourses);
+router.post("/assign-courses", protect, admins, controller.assignCourses);
+router.get("/ids", protect, admins, controller.ids);
 router.get("/", protect, admins, controller.list);
 
 // Student: own profile (must come before "/:id")

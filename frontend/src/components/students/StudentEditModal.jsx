@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import CourseChecklist from "./CourseChecklist";
-import { Field, ModalShell, addMonths, api, dateInput, errorText, inputClass, todayInput } from "./shared";
+import { Field, ModalShell, api, dateInput, errorText, inputClass } from "./shared";
 
 // Admin: edit a student's details, their branches and courses, and the period of each course.
 const StudentEditModal = ({ student, onClose, onSaved }) => {
@@ -44,13 +44,13 @@ const StudentEditModal = ({ student, onClose, onSaved }) => {
     return `Course ${id}`;
   };
 
-  // a newly ticked course starts today and ends in 6 months, until changed
+  // a newly ticked course has no dates until you enter them (dates are optional)
   const changeCourses = (ids) => {
     setCourseIds(ids);
     setPeriods((p) => {
       const next = { ...p };
       for (const id of ids) {
-        if (!next[id]) next[id] = { startDate: todayInput(), endDate: addMonths(todayInput(), 6) };
+        if (!next[id]) next[id] = { startDate: "", endDate: "" };
       }
       return next;
     });
@@ -65,8 +65,8 @@ const StudentEditModal = ({ student, onClose, onSaved }) => {
     if (!/^\d{10}$/.test(form.phoneNumber.trim())) return toast.error("Phone number must be 10 digits");
     for (const id of courseIds) {
       const p = periods[id];
-      if (!p?.startDate || !p?.endDate) return toast.error(`Please enter the dates for ${courseName(id)}`);
-      if (p.endDate < p.startDate) return toast.error(`End date cannot be before the start date for ${courseName(id)}`);
+      if (!!p?.startDate !== !!p?.endDate) return toast.error(`Please give both dates for ${courseName(id)}, or leave both empty`);
+      if (p?.startDate && p.endDate < p.startDate) return toast.error(`End date cannot be before the start date for ${courseName(id)}`);
     }
 
     try {

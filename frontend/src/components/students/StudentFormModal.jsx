@@ -36,8 +36,8 @@ const StudentFormModal = ({ onClose, onSaved }) => {
     if (!form.name.trim()) return toast.error("Please enter the student's name");
     if (!/^\d{10}$/.test(form.phoneNumber.trim())) return toast.error("Phone number must be 10 digits");
     if (courseIds.length === 0) return toast.error("Please tick at least one branch and course");
-    if (!form.startDate || !form.endDate) return toast.error("Please enter the course start and end dates");
-    if (form.endDate < form.startDate) return toast.error("End date cannot be before the start date");
+    if (!!form.startDate !== !!form.endDate) return toast.error("Please give both course dates, or leave both empty");
+    if (form.startDate && form.endDate < form.startDate) return toast.error("End date cannot be before the start date");
 
     try {
       setSaving(true);
@@ -83,10 +83,10 @@ const StudentFormModal = ({ onClose, onSaved }) => {
           </Field>
           <div />
 
-          <Field label="Course starts">
+          <Field label="Course starts (optional)">
             <input type="date" className={inputClass} value={form.startDate} onChange={set("startDate")} />
           </Field>
-          <Field label="Course ends">
+          <Field label="Course ends (optional)">
             <input type="date" className={inputClass} value={form.endDate} onChange={set("endDate")} />
             <div className="flex gap-2 pt-1">
               {[

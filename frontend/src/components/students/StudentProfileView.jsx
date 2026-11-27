@@ -20,6 +20,18 @@ export const DaysHero = ({ enrollment }) => {
       </div>
     );
   }
+  if (!enrollment.startDate || !enrollment.endDate) {
+    return (
+      <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+        <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Course validity</p>
+        <p className="mt-2 text-lg font-medium text-slate-800">
+          {enrollment.courseName}
+          {enrollment.branchName ? <span className="text-slate-500"> · {enrollment.branchName}</span> : null}
+        </p>
+        <p className="mt-1 text-sm text-slate-500">Dates are not set yet. Add them from Edit to see the days left.</p>
+      </div>
+    );
+  }
   const total = Math.max(1, Math.round((new Date(enrollment.endDate) - new Date(enrollment.startDate)) / DAY));
   const used = Math.min(total, Math.max(0, total - enrollment.daysLeft));
   const pct = Math.round((used / total) * 100);
@@ -166,7 +178,7 @@ const StudentProfileView = ({ mode, studentId, backPath, children }) => {
                     <div>
                       <p className="text-sm font-medium text-slate-900">{e.courseName}</p>
                       <p className="text-xs text-slate-500">
-                        {e.branchName} · {formatDate(e.startDate)} – {formatDate(e.endDate)}
+                        {e.branchName} · {e.startDate && e.endDate ? `${formatDate(e.startDate)} – ${formatDate(e.endDate)}` : "Dates not set"}
                       </p>
                     </div>
                     <DaysBadge enrollment={e} />

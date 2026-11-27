@@ -36,18 +36,28 @@ const toIso = (v) => {
 
 const norm = (h) => String(h).toLowerCase().replace(/\(.*?\)/g, "").replace(/[^a-z]/g, "");
 
-const downloadTemplate = () => {
-  const ws = XLSX.utils.aoa_to_sheet([
-    HEADERS,
-    ["Riya Shah", "9876543210", "UPSC/GPSC Eng, GPSC Gujarati", "2026-11-10", "2027-05-10", "2026-11-10", "Adajan, Surat", ""],
-  ]);
-  ws["!cols"] = HEADERS.map(() => ({ wch: 22 }));
+const COURSE_HEADERS = [
+  "Phone",
+  "Courses (comma separated)",
+  "Start Date (optional, YYYY-MM-DD)",
+  "End Date (optional, YYYY-MM-DD)",
+  "Name (optional, only to show in messages)",
+];
+
+const downloadTemplate = (coursesMode) => {
+  const head = coursesMode ? COURSE_HEADERS : HEADERS;
+  const sample = coursesMode
+    ? ["9876543210", "UPSC/GPSC Eng, Competitive", "2026-11-10", "2027-05-10", "Riya Shah"]
+    : ["Riya Shah", "9876543210", "UPSC/GPSC Eng, GPSC Gujarati", "2026-11-10", "2027-05-10", "2026-11-10", "Adajan, Surat", ""];
+  const ws = XLSX.utils.aoa_to_sheet([head, sample]);
+  ws["!cols"] = head.map(() => ({ wch: 24 }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Students");
-  XLSX.writeFile(wb, "student-import-template.xlsx");
+  XLSX.writeFile(wb, coursesMode ? "student-courses-template.xlsx" : "student-import-template.xlsx");
 };
 
-const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
+const StudentImportModal = ({ role, branches = [], onClose, onDone, mode = "students" }) => {
+  const coursesMode = mode === "courses"; // add courses to students that already exist
   const { user } = getAuth();
   const isSuper = role === "SUPER_ADMIN";
   const [branchId, setBranchId] = useState(isSuper ? "" : String(user?.branchId || ""));
@@ -66,10 +76,10 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
       const [head, ...body] = grid;
       const idx = {};
       (head || []).forEach((h, i) => (idx[norm(h)] = i));
-      const need = ["name", "phone"]; // everything else is optional
+      const need = coursesMode ? ["phone", "courses"] : ["name", "phone"]; // everything else is optional
       const missing = need.filter((k) => idx[k] === undefined);
       if (missing.length) {
-        toast.error("The Name and Phone columns are needed. Please use the template.");
+        toast.error(coursesMode ? "The Phone and Courses columns are needed. Please use the template." : "The Name and Phone columns are needed. Please use the template.");
         return;
       }
       const cell = (r, k) => (idx[k] === undefined ? "" : r[idx[k]]);
@@ -103,7 +113,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
     try {
       const CHUNK = 100;
       for (let i = 0; i < rows.length; i += CHUNK) {
-        const { data } = await api("post", "students/bulk", {
+        const { data } = await api("post", coursesMode ? "students/bulk-courses" : "students/bulk", {
           branchId: Number(branchId),
           rows: rows.slice(i, i + CHUNK),
         });
@@ -114,7 +124,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
       }
       setResult({ created: created.length, errors, warnings });
       if (created.length) {
-        toast.success(`${created.length} student${created.length === 1 ? "" : "s"} imported`);
+        toast.success(coursesMode ? `Courses added for ${created.length} student${created.length === 1 ? "" : "s"}` : `${created.length} student${created.length === 1 ? "" : "s"} imported`);
         onDone?.();
       }
     } catch (err) {
@@ -129,13 +139,20 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
   };
 
   return (
-    <ModalShell title="Import Students" subtitle="Upload an Excel file to add many students at once." onClose={onClose} wide>
+    <ModalShell
+      title={coursesMode ? "Import Courses" : "Import Students"}
+      subtitle={coursesMode ? "Upload an Excel file to add courses to students who are already added." : "Upload an Excel file to add many students at once."}
+      onClose={onClose}
+      wide
+    >
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-maroon-100 bg-maroon-50/60 p-4">
           <p className="text-sm text-slate-700">
-            Use our template. Only Name and Phone are required. Courses and dates are optional: if you add a course, its start and end dates are also needed, and the course name must match exactly what is created for the branch.
+            {coursesMode
+              ? "Use our template. Each row needs the student's phone number and the course name(s). Course names must match exactly what is created for the branch. Dates are optional. Courses the student already has are not removed."
+              : "Use our template. Only Name and Phone are required. Courses and dates are optional. If you add a course, the course name must match exactly what is created for the branch."}
           </p>
-          <Button type="button" variant="outline" className="cursor-pointer" onClick={downloadTemplate}>
+          <Button type="button" variant="outline" className="cursor-pointer" onClick={() => downloadTemplate(coursesMode)}>
             <Download className="size-4" /> Download template
           </Button>
         </div>
@@ -165,7 +182,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
             <table className="w-full text-left text-xs">
               <thead className="bg-maroon-50 text-maroon-800">
                 <tr>
-                  {["Name", "Phone", "Courses", "Start", "End"].map((h) => (
+                  {(coursesMode ? ["Phone", "Courses", "Start", "End"] : ["Name", "Phone", "Courses", "Start", "End"]).map((h) => (
                     <th key={h} className="px-3 py-2 font-semibold">{h}</th>
                   ))}
                 </tr>
@@ -173,7 +190,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
               <tbody>
                 {rows.slice(0, 5).map((r, i) => (
                   <tr key={i} className="border-t border-stone-100">
-                    <td className="px-3 py-1.5">{r.name}</td>
+                    {!coursesMode && <td className="px-3 py-1.5">{r.name}</td>}
                     <td className="px-3 py-1.5">{r.phoneNumber}</td>
                     <td className="px-3 py-1.5">{r.courseNames}</td>
                     <td className="px-3 py-1.5">{r.startDate}</td>
@@ -189,7 +206,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
         {result && (
           <div className="rounded-xl border border-stone-200 p-4">
             <p className="text-sm font-semibold text-slate-900">
-              {result.created} imported{result.errors.length ? `, ${result.errors.length} skipped` : ""}
+              {result.created} {coursesMode ? "updated" : "imported"}{result.errors.length ? `, ${result.errors.length} skipped` : ""}
             </p>
             {result.errors.length > 0 && (
               <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto text-xs text-red-700">
@@ -203,7 +220,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
             {result.warnings?.length > 0 && (
               <>
                 <p className="mt-3 text-xs font-semibold text-amber-700">
-                  Imported, but the course was not added for {result.warnings.length} student{result.warnings.length === 1 ? "" : "s"}
+                  {coursesMode ? "Some courses were not added" : "Imported, but the course was not added"} for {result.warnings.length} student{result.warnings.length === 1 ? "" : "s"}
                 </p>
                 <ul className="mt-1 max-h-40 space-y-1 overflow-y-auto text-xs text-amber-700">
                   {result.warnings.map((w, i) => (
@@ -224,7 +241,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
         </Button>
         {!result && (
           <Button type="button" className="flex-1 cursor-pointer" disabled={busy || rows.length === 0} onClick={run}>
-            {busy ? "Importing..." : `Import ${rows.length || ""} students`}
+            {busy ? "Importing..." : coursesMode ? `Update ${rows.length || ""} students` : `Import ${rows.length || ""} students`}
           </Button>
         )}
       </div>

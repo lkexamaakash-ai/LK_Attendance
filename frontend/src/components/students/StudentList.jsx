@@ -1,10 +1,11 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Search, Upload, UserPlus } from "lucide-react";
+import { BookPlus, ChevronLeft, ChevronRight, Search, Upload, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import EmptyState from "../layout/EmptyState";
+import AssignCoursesModal from "./AssignCoursesModal";
 import StudentFormModal from "./StudentFormModal";
 import StudentImportModal from "./StudentImportModal";
 import { DaysBadge, api, errorText, initialsOf } from "./shared";
@@ -26,6 +27,10 @@ const StudentList = ({ role, basePath }) => {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showCoursesImport, setShowCoursesImport] = useState(false);
+  const [selected, setSelected] = useState(() => new Set());
+  const [showAssign, setShowAssign] = useState(false);
+  const [selectingAll, setSelectingAll] = useState(false);
 
   useEffect(() => {
     if (!isSuper) return;
@@ -65,6 +70,38 @@ const StudentList = ({ role, basePath }) => {
     load();
   }, [load]);
 
+  const pageIds = items.map((s) => s.id);
+  const allOnPage = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
+
+  const toggleOne = (id) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const togglePage = () =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allOnPage) pageIds.forEach((id) => next.delete(id));
+      else pageIds.forEach((id) => next.add(id));
+      return next;
+    });
+
+  // select every student that matches the current search / branch, across all pages
+  const selectEverything = async () => {
+    try {
+      setSelectingAll(true);
+      const { data } = await api("get", "students/ids", null, { q: q || undefined, branchId: branchId || undefined });
+      setSelected(new Set(data.data));
+    } catch (err) {
+      toast.error(errorText(err, "Could not select all students"));
+    } finally {
+      setSelectingAll(false);
+    }
+  };
+
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const to = Math.min(page * PAGE_SIZE, total);
@@ -100,15 +137,50 @@ const StudentList = ({ role, basePath }) => {
           <Button variant="outline" className="cursor-pointer" onClick={() => setShowImport(true)}>
             <Upload className="size-4" /> Import Excel
           </Button>
+          <Button variant="outline" className="cursor-pointer" onClick={() => setShowCoursesImport(true)}>
+            <BookPlus className="size-4" /> Import courses
+          </Button>
           <Button className="cursor-pointer" onClick={() => setShowAdd(true)}>
             <UserPlus className="size-4" /> Add Student
           </Button>
         </div>
 
+        {selected.size > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-maroon-200 bg-maroon-50 px-4 py-2.5 text-sm">
+            <span className="font-medium text-maroon-800">{selected.size} selected</span>
+            {selected.size < total && (
+              <button
+                onClick={selectEverything}
+                disabled={selectingAll}
+                className="cursor-pointer font-medium text-maroon-700 underline hover:text-maroon-800"
+              >
+                {selectingAll ? "Selecting..." : `Select all ${total}`}
+              </button>
+            )}
+            <div className="ml-auto flex gap-2">
+              <Button size="sm" className="cursor-pointer" onClick={() => setShowAssign(true)}>
+                <BookPlus className="size-4" /> Assign courses
+              </Button>
+              <Button size="sm" variant="outline" className="cursor-pointer" onClick={() => setSelected(new Set())}>
+                Clear
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="mt-4 min-h-0 flex-1 overflow-auto rounded-lg border border-stone-200">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="w-full min-w-[800px] text-left text-sm">
             <thead className="sticky top-0 bg-maroon-50 text-xs uppercase tracking-wide text-maroon-800">
               <tr>
+                <th className="w-10 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all students on this page"
+                    checked={allOnPage}
+                    onChange={togglePage}
+                    className="size-4 cursor-pointer accent-maroon-700"
+                  />
+                </th>
                 <th className="px-4 py-3 font-semibold">Student</th>
                 {isSuper && <th className="px-4 py-3 font-semibold">Branch</th>}
                 <th className="px-4 py-3 font-semibold">Courses &amp; validity</th>
@@ -122,6 +194,15 @@ const StudentList = ({ role, basePath }) => {
                   onClick={() => router.push(`${basePath}/${s.id}`)}
                   className="cursor-pointer border-t border-stone-100 text-slate-700 transition-colors hover:bg-maroon-50/70"
                 >
+                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${s.name}`}
+                      checked={selected.has(s.id)}
+                      onChange={() => toggleOne(s.id)}
+                      className="size-4 cursor-pointer accent-maroon-700"
+                    />
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-maroon-100 text-xs font-semibold text-maroon-700">
@@ -196,6 +277,26 @@ const StudentList = ({ role, basePath }) => {
       )}
       {showImport && (
         <StudentImportModal role={role} branches={branches} onClose={() => setShowImport(false)} onDone={load} />
+      )}
+      {showCoursesImport && (
+        <StudentImportModal
+          mode="courses"
+          role={role}
+          branches={branches}
+          onClose={() => setShowCoursesImport(false)}
+          onDone={load}
+        />
+      )}
+      {showAssign && (
+        <AssignCoursesModal
+          studentIds={[...selected]}
+          onClose={() => setShowAssign(false)}
+          onDone={() => {
+            setShowAssign(false);
+            setSelected(new Set());
+            load();
+          }}
+        />
       )}
     </>
   );

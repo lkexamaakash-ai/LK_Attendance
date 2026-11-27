@@ -32,9 +32,12 @@ const toDate = (value, label) => {
   return d;
 };
 
-const daysLeftOf = (endDate) => Math.round((new Date(endDate).getTime() - todayIST().getTime()) / DAY);
+// A course may have no dates yet (dates are optional).
+const daysLeftOf = (endDate) =>
+  endDate ? Math.round((new Date(endDate).getTime() - todayIST().getTime()) / DAY) : null;
 
 const statusOf = (daysLeft) => {
+  if (daysLeft === null) return "NO_DATES";
   if (daysLeft < 0) return "EXPIRED";
   if (daysLeft <= EXPIRING_DAYS) return "EXPIRING";
   return "ACTIVE";
@@ -63,7 +66,7 @@ const formatStudent = (s, viewerBranchId = null) => {
   const list = (s.enrollments || []).filter((e) => !viewerBranchId || e.course.branchId === viewerBranchId);
   const enrollments = list
     .slice()
-    .sort((a, b) => new Date(b.endDate) - new Date(a.endDate))
+    .sort((a, b) => (b.endDate ? new Date(b.endDate).getTime() : -Infinity) - (a.endDate ? new Date(a.endDate).getTime() : -Infinity))
     .map(formatEnrollment);
 
   const branchNames = [...new Set(enrollments.map((e) => e.branchName))];
@@ -135,7 +138,10 @@ const cleanPhone = (v) => {
   return phone;
 };
 
+// Both dates are optional. Give both, or leave both empty.
 const cleanPeriod = (startDate, endDate) => {
+  if (!startDate && !endDate) return { start: null, end: null };
+  if (!startDate || !endDate) throw new HttpError(400, "Please give both the start and end date, or leave both empty");
   const start = toDate(startDate, "Start date");
   const end = toDate(endDate, "End date");
   if (end < start) throw new HttpError(400, "End date cannot be before the start date");
@@ -198,7 +204,7 @@ const createOne = async ({ branchId, items, input, hashedPassword }) => {
   const phoneNumber = cleanPhone(input.phoneNumber);
   const admissionDate = input.admissionDate
     ? toDate(input.admissionDate, "Admission date")
-    : items[0]?.start || todayIST();
+    : items.find((i) => i.start)?.start || todayIST();
 
   const exists = await prisma.user.findUnique({ where: { phoneNumber } });
   if (exists) throw new HttpError(409, "This phone number is already registered");
@@ -267,8 +273,8 @@ const bulkCreateStudents = async (userId, { branchId: requestedBranch, rows }) =
         let period = null;
         try {
           period = cleanPeriod(row.startDate, row.endDate);
-        } catch {
-          warnings.push({ row: sheetRow, name: row.name, message: "Course not added: start and end dates are needed to add a course" });
+        } catch (err) {
+          warnings.push({ row: sheetRow, name: row.name, message: `Course not added: ${err.message}` });
         }
         if (period) {
           const missing = [];
@@ -488,8 +494,149 @@ const deleteStudent = async (userId, studentId) => {
   return { deleted: true, removedFromBranch: false, name: student.user.name };
 };
 
+// ---------- ids of all students matching a search (for "select all") ----------
+const listStudentIds = async (userId, { branchId, q }) => {
+  const me = await getRequester(userId);
+  const scope = branchScope(me, branchId);
+  const and = [];
+  if (scope) {
+    and.push({ OR: [{ branchId: scope }, { enrollments: { some: { course: { branchId: scope } } } }] });
+  }
+  const search = String(q || "").trim();
+  if (search) {
+    and.push({
+      user: { OR: [{ name: { contains: search, mode: "insensitive" } }, { phoneNumber: { contains: search } }] },
+    });
+  }
+  const rows = await prisma.student.findMany({
+    where: and.length ? { AND: and } : {},
+    select: { id: true },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((r) => r.id);
+};
+
+// Adds (or updates the dates of) one set of courses for a student. Never removes anything.
+const addCoursesTo = async (studentIds, items) => {
+  for (const it of items) {
+    const existing = await prisma.enrollment.findMany({
+      where: { courseId: it.courseId, studentId: { in: studentIds } },
+      select: { studentId: true },
+    });
+    const have = new Set(existing.map((e) => e.studentId));
+    const toCreate = studentIds.filter((id) => !have.has(id));
+    if (toCreate.length) {
+      await prisma.enrollment.createMany({
+        data: toCreate.map((studentId) => ({ studentId, courseId: it.courseId, startDate: it.start, endDate: it.end })),
+        skipDuplicates: true,
+      });
+    }
+    // only touch the dates of courses the student already had if new dates were given
+    if (it.start && it.end && have.size) {
+      await prisma.enrollment.updateMany({
+        where: { courseId: it.courseId, studentId: { in: [...have] } },
+        data: { startDate: it.start, endDate: it.end },
+      });
+    }
+  }
+};
+
+// ---------- give the same courses to many students at once ----------
+const assignCourses = async (userId, input) => {
+  const me = await getRequester(userId);
+  requireAdmin(me);
+
+  const ids = [...new Set((input.studentIds || []).map(Number).filter((n) => Number.isInteger(n)))];
+  if (ids.length === 0) throw new HttpError(400, "Please select at least one student");
+  if (ids.length > 1000) throw new HttpError(400, "Please select at most 1000 students at a time");
+  const items = await cleanCourseItems(me, input.courses);
+
+  const students = await prisma.student.findMany({
+    where: { id: { in: ids } },
+    include: { user: true, enrollments: { include: enrollmentInclude } },
+  });
+  const allowed = students.filter((s) => canManage(me, s)).map((s) => s.id);
+  if (allowed.length === 0) throw new HttpError(403, "Access Denied");
+
+  await addCoursesTo(allowed, items);
+
+  await createAuditLog({
+    userId: me.id,
+    action: "UPDATE",
+    entity: "StudentCourses",
+    entityId: allowed[0],
+    newData: { students: allowed.length, courseIds: items.map((i) => i.courseId) },
+    description: `${me.name} gave ${items.length} course(s) to ${allowed.length} student(s)`,
+  });
+
+  return { updated: allowed.length, skipped: ids.length - allowed.length };
+};
+
+// ---------- Excel: add courses to students that already exist (found by phone number) ----------
+const bulkAssignCourses = async (userId, { branchId: requestedBranch, rows }) => {
+  const me = await getRequester(userId);
+  const branchId = branchScope(me, requestedBranch);
+  if (!branchId) throw new HttpError(400, "Branch is required");
+  if (!Array.isArray(rows) || rows.length === 0) throw new HttpError(400, "No rows to import");
+  if (rows.length > 1000) throw new HttpError(400, "Please import at most 1000 rows at a time");
+
+  const courses = await prisma.course.findMany({ where: { branchId } });
+  const byName = new Map(courses.map((c) => [c.name.trim().toLowerCase(), c]));
+
+  const updated = [];
+  const errors = [];
+  const warnings = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i] || {};
+    const sheetRow = i + 2;
+    try {
+      const phone = cleanPhone(row.phoneNumber);
+      const names = splitNames(row.courseNames);
+      if (names.length === 0) throw new HttpError(400, "Course is required");
+      const { start, end } = cleanPeriod(row.startDate, row.endDate);
+
+      const user = await prisma.user.findUnique({ where: { phoneNumber: phone }, select: { id: true, role: true } });
+      const student = user && user.role === "STUDENT"
+        ? await prisma.student.findUnique({
+            where: { userId: user.id },
+            include: { enrollments: { include: enrollmentInclude } },
+          })
+        : null;
+      if (!student) throw new HttpError(404, "No student found with this phone number");
+      if (!canManage(me, student)) throw new HttpError(403, "This student belongs to another branch");
+
+      const items = [];
+      const missing = [];
+      for (const n of names) {
+        const course = byName.get(n.toLowerCase());
+        if (!course) missing.push(n);
+        else if (!items.some((x) => x.courseId === course.id)) items.push({ courseId: course.id, start, end });
+      }
+      if (items.length === 0) throw new HttpError(400, `Course not found in this branch: ${missing.join(", ")}`);
+      if (missing.length) {
+        warnings.push({ row: sheetRow, name: row.name, message: `Course not found in this branch: ${missing.join(", ")}` });
+      }
+
+      await addCoursesTo([student.id], items);
+      updated.push({ name: row.name, phoneNumber: phone });
+    } catch (err) {
+      errors.push({
+        row: sheetRow,
+        name: row.name,
+        phoneNumber: row.phoneNumber,
+        message: err.status ? err.message : "Could not save this row",
+      });
+    }
+  }
+  return { created: updated, errors, warnings };
+};
+
 module.exports = {
   HttpError,
+  listStudentIds,
+  assignCourses,
+  bulkAssignCourses,
   deleteStudent,
   getOptions,
   createStudent,

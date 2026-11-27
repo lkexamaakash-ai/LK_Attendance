@@ -68,11 +68,13 @@ const tone = {
   ACTIVE: "bg-emerald-50 text-emerald-700 ring-emerald-200",
   EXPIRING: "bg-amber-50 text-amber-700 ring-amber-200",
   EXPIRED: "bg-red-50 text-red-700 ring-red-200",
+  NO_DATES: "bg-slate-100 text-slate-600 ring-slate-200",
   NONE: "bg-slate-100 text-slate-600 ring-slate-200",
 };
 
 export const daysLabel = (e) => {
   if (!e) return "No course";
+  if (e.daysLeft === null || e.daysLeft === undefined) return "Dates not set";
   if (e.daysLeft < 0) return `Expired ${Math.abs(e.daysLeft)} day${Math.abs(e.daysLeft) === 1 ? "" : "s"} ago`;
   if (e.daysLeft === 0) return "Ends today";
   return `${e.daysLeft} day${e.daysLeft === 1 ? "" : "s"} left`;
