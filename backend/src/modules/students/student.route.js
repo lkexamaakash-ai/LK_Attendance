@@ -15,6 +15,7 @@ router.post("/", protect, admins, controller.create);
 router.post("/bulk", protect, admins, controller.bulkCreate);
 router.post("/bulk-courses", protect, admins, controller.bulkAssignCourses);
 router.post("/assign-courses", protect, admins, controller.assignCourses);
+router.post("/bulk-delete", protect, admins, controller.removeMany);
 router.get("/ids", protect, admins, controller.ids);
 router.get("/", protect, admins, controller.list);
 

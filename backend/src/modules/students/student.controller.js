@@ -22,9 +22,10 @@ const me = handle((req) => service.getMe(req.user.id));
 const getOne = handle((req) => service.getProfile(req.user.id, req.params.id));
 const update = handle((req) => service.updateStudent(req.user.id, req.params.id, req.body));
 const remove = handle((req) => service.deleteStudent(req.user.id, req.params.id));
+const removeMany = handle((req) => service.deleteMany(req.user.id, req.body));
 const ids = handle((req) => service.listStudentIds(req.user.id, req.query));
 const assignCourses = handle((req) => service.assignCourses(req.user.id, req.body));
 const bulkAssignCourses = handle((req) => service.bulkAssignCourses(req.user.id, req.body));
 const setEnrollments = handle((req) => service.setEnrollments(req.user.id, req.params.id, req.body));
 
-module.exports = { options, create, bulkCreate, list, me, getOne, update, setEnrollments, remove, ids, assignCourses, bulkAssignCourses };
+module.exports = { options, create, bulkCreate, list, me, getOne, update, setEnrollments, remove, removeMany, ids, assignCourses, bulkAssignCourses };

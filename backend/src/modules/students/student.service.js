@@ -632,8 +632,73 @@ const bulkAssignCourses = async (userId, { branchId: requestedBranch, rows }) =>
   return { created: updated, errors, warnings };
 };
 
+// ---------- delete many students at once ----------
+// Same rules as deleting one: a super admin deletes them completely. A branch admin removes students
+// who also study in another branch only from their own branch, and deletes the others completely.
+const deleteMany = async (userId, input) => {
+  const me = await getRequester(userId);
+  requireAdmin(me);
+
+  const ids = [...new Set((input.studentIds || []).map(Number).filter((n) => Number.isInteger(n)))];
+  if (ids.length === 0) throw new HttpError(400, "Please select at least one student");
+  if (ids.length > 1000) throw new HttpError(400, "Please select at most 1000 students at a time");
+
+  const students = await prisma.student.findMany({
+    where: { id: { in: ids } },
+    include: { user: true, enrollments: { include: enrollmentInclude } },
+  });
+  const allowed = students.filter((s) => canManage(me, s));
+  if (allowed.length === 0) throw new HttpError(403, "Access Denied");
+
+  const partial = [];
+  const full = [];
+  for (const s of allowed) {
+    const elsewhere = me.role === "BRANCH_ADMIN" && s.enrollments.some((e) => e.course.branchId !== me.branchId);
+    (elsewhere ? partial : full).push(s);
+  }
+
+  const fullIds = full.map((s) => s.id);
+  const operations = [];
+  if (partial.length) {
+    const partialIds = partial.map((s) => s.id);
+    operations.push(
+      prisma.studentAttendance.deleteMany({
+        where: { studentId: { in: partialIds }, batch: { course: { branchId: me.branchId } } },
+      }),
+      prisma.enrollment.deleteMany({
+        where: { studentId: { in: partialIds }, course: { branchId: me.branchId } },
+      }),
+    );
+  }
+  if (full.length) {
+    operations.push(
+      prisma.studentAttendance.deleteMany({ where: { studentId: { in: fullIds } } }),
+      prisma.enrollment.deleteMany({ where: { studentId: { in: fullIds } } }),
+      prisma.student.deleteMany({ where: { id: { in: fullIds } } }),
+      prisma.user.deleteMany({ where: { id: { in: full.map((s) => s.userId) } } }),
+    );
+  }
+  await prisma.$transaction(operations);
+
+  await createAuditLog({
+    userId: me.id,
+    action: "DELETE",
+    entity: "Student",
+    entityId: allowed[0].id,
+    oldData: { deleted: full.map((s) => s.user.name), removedFromBranch: partial.map((s) => s.user.name) },
+    description: `${me.name} deleted ${full.length} student(s) and removed ${partial.length} from their branch`,
+  });
+
+  return {
+    deleted: full.length,
+    removedFromBranch: partial.length,
+    skipped: ids.length - allowed.length,
+  };
+};
+
 module.exports = {
   HttpError,
+  deleteMany,
   listStudentIds,
   assignCourses,
   bulkAssignCourses,
