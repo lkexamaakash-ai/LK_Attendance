@@ -192,11 +192,13 @@ const getOptions = async (userId) => {
 };
 
 // ---------- create ----------
-const createOne = async ({ items, input, hashedPassword }) => {
+const createOne = async ({ branchId, items, input, hashedPassword }) => {
   const name = String(input.name || "").trim();
   if (!name) throw new HttpError(400, "Name is required");
   const phoneNumber = cleanPhone(input.phoneNumber);
-  const admissionDate = input.admissionDate ? toDate(input.admissionDate, "Admission date") : items[0].start;
+  const admissionDate = input.admissionDate
+    ? toDate(input.admissionDate, "Admission date")
+    : items[0]?.start || todayIST();
 
   const exists = await prisma.user.findUnique({ where: { phoneNumber } });
   if (exists) throw new HttpError(409, "This phone number is already registered");
@@ -208,7 +210,7 @@ const createOne = async ({ items, input, hashedPassword }) => {
     const student = await tx.student.create({
       data: {
         userId: user.id,
-        branchId: items[0].course.branchId, // home branch = branch of the first course
+        branchId, // home branch
         admissionDate,
         address: input.address ? String(input.address).trim() : null,
         email: input.email ? String(input.email).trim() : null,
@@ -228,7 +230,7 @@ const createStudent = async (userId, input) => {
   requireAdmin(me);
   const items = await cleanCourseItems(me, input.courses);
   const hashedPassword = await bcrypt.hash(getDefaultPassword(), 10);
-  const created = await createOne({ items, input, hashedPassword });
+  const created = await createOne({ branchId: items[0].course.branchId, items, input, hashedPassword });
   return getProfile(userId, created.studentId);
 };
 
@@ -251,31 +253,49 @@ const bulkCreateStudents = async (userId, { branchId: requestedBranch, rows }) =
 
   const created = [];
   const errors = [];
+  const warnings = [];
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i] || {};
+    const sheetRow = i + 2; // +2: the header is row 1 in the Excel sheet
     try {
-      const names = splitNames(row.courseNames);
-      if (names.length === 0) throw new HttpError(400, "Course is required");
-      const { start, end } = cleanPeriod(row.startDate, row.endDate);
+      // Only the name and the phone number are required. Courses and dates are optional.
+      // If something about the course is not usable, the student is still added and a note is returned.
       const items = [];
-      for (const n of names) {
-        const course = byName.get(n.toLowerCase());
-        if (!course) throw new HttpError(400, `Course "${n}" was not found in this branch`);
-        if (!items.some((x) => x.courseId === course.id)) items.push({ courseId: course.id, course, start, end });
+      const names = splitNames(row.courseNames);
+      if (names.length > 0) {
+        let period = null;
+        try {
+          period = cleanPeriod(row.startDate, row.endDate);
+        } catch {
+          warnings.push({ row: sheetRow, name: row.name, message: "Course not added: start and end dates are needed to add a course" });
+        }
+        if (period) {
+          const missing = [];
+          for (const n of names) {
+            const course = byName.get(n.toLowerCase());
+            if (!course) missing.push(n);
+            else if (!items.some((x) => x.courseId === course.id)) {
+              items.push({ courseId: course.id, course, start: period.start, end: period.end });
+            }
+          }
+          if (missing.length) {
+            warnings.push({ row: sheetRow, name: row.name, message: `Course not found in this branch: ${missing.join(", ")}` });
+          }
+        }
       }
-      await createOne({ items, input: row, hashedPassword });
+      await createOne({ branchId, items, input: row, hashedPassword });
       created.push({ name: row.name, phoneNumber: row.phoneNumber });
     } catch (err) {
       errors.push({
-        row: i + 2, // +2: header row is row 1 in the Excel sheet
+        row: sheetRow,
         name: row.name,
         phoneNumber: row.phoneNumber,
         message: err.status ? err.message : "Could not save this row",
       });
     }
   }
-  return { created, errors };
+  return { created, errors, warnings };
 };
 
 // ---------- read ----------

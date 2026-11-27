@@ -9,9 +9,9 @@ import { Field, ModalShell, api, errorText, getAuth, inputClass } from "./shared
 const HEADERS = [
   "Name",
   "Phone",
-  "Courses (comma separated)",
-  "Start Date (YYYY-MM-DD)",
-  "End Date (YYYY-MM-DD)",
+  "Courses (optional, comma separated)",
+  "Start Date (optional, YYYY-MM-DD)",
+  "End Date (optional, YYYY-MM-DD)",
   "Admission Date (optional)",
   "Address (optional)",
   "Email (optional)",
@@ -66,10 +66,10 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
       const [head, ...body] = grid;
       const idx = {};
       (head || []).forEach((h, i) => (idx[norm(h)] = i));
-      const need = ["name", "phone", "courses", "startdate", "enddate"];
+      const need = ["name", "phone"]; // everything else is optional
       const missing = need.filter((k) => idx[k] === undefined);
       if (missing.length) {
-        toast.error("Some columns are missing. Please use the template.");
+        toast.error("The Name and Phone columns are needed. Please use the template.");
         return;
       }
       const cell = (r, k) => (idx[k] === undefined ? "" : r[idx[k]]);
@@ -99,6 +99,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
     setBusy(true);
     const created = [];
     const errors = [];
+    const warnings = [];
     try {
       const CHUNK = 100;
       for (let i = 0; i < rows.length; i += CHUNK) {
@@ -107,10 +108,11 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
           rows: rows.slice(i, i + CHUNK),
         });
         created.push(...data.data.created);
+        warnings.push(...(data.data.warnings || []).map((w) => ({ ...w, row: w.row + i })));
         // row numbers from the server are relative to this chunk; shift them to the sheet row
         errors.push(...data.data.errors.map((er) => ({ ...er, row: er.row + i })));
       }
-      setResult({ created: created.length, errors });
+      setResult({ created: created.length, errors, warnings });
       if (created.length) {
         toast.success(`${created.length} student${created.length === 1 ? "" : "s"} imported`);
         onDone?.();
@@ -118,7 +120,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
     } catch (err) {
       toast.error(errorText(err, "Import failed"));
       if (created.length) {
-        setResult({ created: created.length, errors });
+        setResult({ created: created.length, errors, warnings });
         onDone?.();
       }
     } finally {
@@ -131,7 +133,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-maroon-100 bg-maroon-50/60 p-4">
           <p className="text-sm text-slate-700">
-            Use our template. Course names must match exactly what is already created for the branch. For more than one course, separate the names with commas.
+            Use our template. Only Name and Phone are required. Courses and dates are optional: if you add a course, its start and end dates are also needed, and the course name must match exactly what is created for the branch.
           </p>
           <Button type="button" variant="outline" className="cursor-pointer" onClick={downloadTemplate}>
             <Download className="size-4" /> Download template
@@ -197,6 +199,20 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
                   </li>
                 ))}
               </ul>
+            )}
+            {result.warnings?.length > 0 && (
+              <>
+                <p className="mt-3 text-xs font-semibold text-amber-700">
+                  Imported, but the course was not added for {result.warnings.length} student{result.warnings.length === 1 ? "" : "s"}
+                </p>
+                <ul className="mt-1 max-h-40 space-y-1 overflow-y-auto text-xs text-amber-700">
+                  {result.warnings.map((w, i) => (
+                    <li key={i}>
+                      Row {w.row}{w.name ? ` (${w.name})` : ""}: {w.message}
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </div>
         )}
