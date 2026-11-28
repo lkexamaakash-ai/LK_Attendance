@@ -1,11 +1,12 @@
 "use client";
-import { LayoutDashboard, CalendarCheck, ClipboardCheck, BookMarked, CircleUser } from "lucide-react";
+import { LayoutDashboard, CalendarCheck, ClipboardCheck, ChartColumn, BookMarked, CircleUser } from "lucide-react";
 import AppSidebar from "../layout/AppSidebar";
 
 const items = [
   { name: "Dashboard", link: "/faculty", icon: LayoutDashboard },
   { name: "Attendance", link: "/faculty/attendance", icon: CalendarCheck },
   { name: "Student Attendance", link: "/faculty/student-attendance", icon: ClipboardCheck },
+  { name: "Report", link: "/faculty/report", icon: ChartColumn },
   { name: "My Subject & Batches", link: "/faculty/lecture", icon: BookMarked },
   { name: "Profile", link: "/faculty/profile", icon: CircleUser },
 ];

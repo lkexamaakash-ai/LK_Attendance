@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Button } from "../ui/button";
+import StudentAttendanceReport from "../students/StudentAttendanceReport";
 import { useManagement } from "@/context/ManagementContext";
 import { Input } from "../ui/input";
 import ReportModels from "./Modal/ReportModels";
@@ -190,6 +191,7 @@ const Report = () => {
             <SelectContent>
               <SelectItem value={`FACULTY`}>Faculty</SelectItem>
               <SelectItem value={`STAFF`}>Staff</SelectItem>
+              <SelectItem value={`STUDENT`}>Student attendance</SelectItem>
             </SelectContent>
           </Select>
 
@@ -197,6 +199,11 @@ const Report = () => {
 
           {/* <Button onClick={() => setRepMo(true)}>Generate report</Button> */}
         </div>
+        {role === "STUDENT" && (
+          <div className="h-[94%] w-full overflow-y-auto pt-4">
+            <StudentAttendanceReport role="BRANCH_ADMIN" embedded />
+          </div>
+        )}
         {role === "STAFF" && (
           <div className="h-[92%] w-full overflow-auto xl:overflow-x-hidden">
             <ul className="grid grid-cols-[60px_180px_260px_220px_140px_140px_140px_140px] xl:grid-cols-8  px-4 py-3 xl:border border-maroon-100 bg-maroon-50 text-maroon-800 rounded-lg font-semibold text-center">

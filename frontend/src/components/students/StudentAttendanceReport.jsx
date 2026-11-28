@@ -1,6 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronDown, ChevronRight, Download } from "lucide-react";
+import { ChevronDown, ChevronRight, Download } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
@@ -21,7 +21,7 @@ const inputCls = "mt-1 block rounded-md border border-stone-300 px-3 py-2 text-s
 
 // Attendance report: by lecture and by student, for a range of dates.
 // Faculty see their own lectures, a branch admin the lectures of their branch, a super admin all.
-const StudentAttendanceReport = ({ role, onBack, onSwitch }) => {
+const StudentAttendanceReport = ({ role, embedded = false }) => {
   const isFaculty = role === "FACULTY";
   const isSuper = role === "SUPER_ADMIN";
 
@@ -130,20 +130,13 @@ const StudentAttendanceReport = ({ role, onBack, onSwitch }) => {
   const t = lectures?.totals;
 
   return (
-    <div className="m-2 h-[91%] space-y-4 overflow-y-auto rounded-xl border border-stone-200 bg-white p-4 shadow-sm sm:p-6">
-      {onBack && (
-        <button onClick={onBack} className="flex items-center gap-1 text-sm font-medium text-maroon-700 hover:underline">
-          <ArrowLeft className="size-4" /> Back to Attendance
-        </button>
-      )}
-
-      <div className="flex gap-2">
-        <button onClick={onSwitch} className="cursor-pointer rounded-full border border-stone-300 px-4 py-1.5 text-sm text-slate-700 hover:border-maroon-300">
-          Mark attendance
-        </button>
-        <span className="rounded-full border border-maroon-700 bg-maroon-50 px-4 py-1.5 text-sm font-medium text-maroon-800">Report</span>
-      </div>
-
+    <div
+      className={
+        embedded
+          ? "space-y-4"
+          : "m-2 h-[91%] space-y-4 overflow-y-auto rounded-xl border border-stone-200 bg-white p-4 shadow-sm sm:p-6"
+      }
+    >
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-sm text-slate-600">
           From
