@@ -1,11 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { BookPlus, ChevronLeft, ChevronRight, Search, Trash2, Upload, UserPlus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Trash2, Upload, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import EmptyState from "../layout/EmptyState";
-import AssignCoursesModal from "./AssignCoursesModal";
 import DeleteManyStudentsModal from "./DeleteManyStudentsModal";
 import StudentFormModal from "./StudentFormModal";
 import StudentImportModal from "./StudentImportModal";
@@ -28,9 +27,7 @@ const StudentList = ({ role, basePath }) => {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
-  const [showCoursesImport, setShowCoursesImport] = useState(false);
   const [selected, setSelected] = useState(() => new Set());
-  const [showAssign, setShowAssign] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [selectingAll, setSelectingAll] = useState(false);
 
@@ -139,9 +136,6 @@ const StudentList = ({ role, basePath }) => {
           <Button variant="outline" className="cursor-pointer" onClick={() => setShowImport(true)}>
             <Upload className="size-4" /> Import Excel
           </Button>
-          <Button variant="outline" className="cursor-pointer" onClick={() => setShowCoursesImport(true)}>
-            <BookPlus className="size-4" /> Import courses
-          </Button>
           <Button className="cursor-pointer" onClick={() => setShowAdd(true)}>
             <UserPlus className="size-4" /> Add Student
           </Button>
@@ -160,9 +154,6 @@ const StudentList = ({ role, basePath }) => {
               </button>
             )}
             <div className="ml-auto flex gap-2">
-              <Button size="sm" className="cursor-pointer" onClick={() => setShowAssign(true)}>
-                <BookPlus className="size-4" /> Assign courses
-              </Button>
               <Button
                 size="sm"
                 variant="outline"
@@ -288,15 +279,6 @@ const StudentList = ({ role, basePath }) => {
       {showImport && (
         <StudentImportModal role={role} branches={branches} onClose={() => setShowImport(false)} onDone={load} />
       )}
-      {showCoursesImport && (
-        <StudentImportModal
-          mode="courses"
-          role={role}
-          branches={branches}
-          onClose={() => setShowCoursesImport(false)}
-          onDone={load}
-        />
-      )}
       {showDelete && (
         <DeleteManyStudentsModal
           studentIds={[...selected]}
@@ -305,17 +287,6 @@ const StudentList = ({ role, basePath }) => {
             setShowDelete(false);
             setSelected(new Set());
             setPage(1);
-            load();
-          }}
-        />
-      )}
-      {showAssign && (
-        <AssignCoursesModal
-          studentIds={[...selected]}
-          onClose={() => setShowAssign(false)}
-          onDone={() => {
-            setShowAssign(false);
-            setSelected(new Set());
             load();
           }}
         />

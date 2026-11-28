@@ -258,6 +258,7 @@ const bulkCreateStudents = async (userId, { branchId: requestedBranch, rows }) =
   const hashedPassword = await bcrypt.hash(getDefaultPassword(), 10);
 
   const created = [];
+  const updated = []; // students that were already added: the courses of the sheet are added to them
   const errors = [];
   const warnings = [];
 
@@ -290,6 +291,23 @@ const bulkCreateStudents = async (userId, { branchId: requestedBranch, rows }) =
           }
         }
       }
+
+      // A phone number that is already a student is not an error: the courses of this row are added to them.
+      const phone = cleanPhone(row.phoneNumber);
+      const existingUser = await prisma.user.findUnique({ where: { phoneNumber: phone }, select: { id: true, role: true } });
+      if (existingUser) {
+        if (existingUser.role !== "STUDENT") throw new HttpError(409, "This phone number is already registered");
+        const student = await prisma.student.findUnique({
+          where: { userId: existingUser.id },
+          include: { enrollments: { include: enrollmentInclude } },
+        });
+        if (!student || !canManage(me, student)) throw new HttpError(403, "This student belongs to another branch");
+        if (items.length === 0) throw new HttpError(409, "Already added. This row has no course to add");
+        await addCoursesTo([student.id], items);
+        updated.push({ name: row.name, phoneNumber: phone });
+        continue;
+      }
+
       await createOne({ branchId, items, input: row, hashedPassword });
       created.push({ name: row.name, phoneNumber: row.phoneNumber });
     } catch (err) {
@@ -301,7 +319,7 @@ const bulkCreateStudents = async (userId, { branchId: requestedBranch, rows }) =
       });
     }
   }
-  return { created, errors, warnings };
+  return { created, updated, errors, warnings };
 };
 
 // ---------- read ----------
@@ -541,97 +559,6 @@ const addCoursesTo = async (studentIds, items) => {
   }
 };
 
-// ---------- give the same courses to many students at once ----------
-const assignCourses = async (userId, input) => {
-  const me = await getRequester(userId);
-  requireAdmin(me);
-
-  const ids = [...new Set((input.studentIds || []).map(Number).filter((n) => Number.isInteger(n)))];
-  if (ids.length === 0) throw new HttpError(400, "Please select at least one student");
-  if (ids.length > 1000) throw new HttpError(400, "Please select at most 1000 students at a time");
-  const items = await cleanCourseItems(me, input.courses);
-
-  const students = await prisma.student.findMany({
-    where: { id: { in: ids } },
-    include: { user: true, enrollments: { include: enrollmentInclude } },
-  });
-  const allowed = students.filter((s) => canManage(me, s)).map((s) => s.id);
-  if (allowed.length === 0) throw new HttpError(403, "Access Denied");
-
-  await addCoursesTo(allowed, items);
-
-  await createAuditLog({
-    userId: me.id,
-    action: "UPDATE",
-    entity: "StudentCourses",
-    entityId: allowed[0],
-    newData: { students: allowed.length, courseIds: items.map((i) => i.courseId) },
-    description: `${me.name} gave ${items.length} course(s) to ${allowed.length} student(s)`,
-  });
-
-  return { updated: allowed.length, skipped: ids.length - allowed.length };
-};
-
-// ---------- Excel: add courses to students that already exist (found by phone number) ----------
-const bulkAssignCourses = async (userId, { branchId: requestedBranch, rows }) => {
-  const me = await getRequester(userId);
-  const branchId = branchScope(me, requestedBranch);
-  if (!branchId) throw new HttpError(400, "Branch is required");
-  if (!Array.isArray(rows) || rows.length === 0) throw new HttpError(400, "No rows to import");
-  if (rows.length > 1000) throw new HttpError(400, "Please import at most 1000 rows at a time");
-
-  const courses = await prisma.course.findMany({ where: { branchId } });
-  const byName = new Map(courses.map((c) => [c.name.trim().toLowerCase(), c]));
-
-  const updated = [];
-  const errors = [];
-  const warnings = [];
-
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i] || {};
-    const sheetRow = i + 2;
-    try {
-      const phone = cleanPhone(row.phoneNumber);
-      const names = splitNames(row.courseNames);
-      if (names.length === 0) throw new HttpError(400, "Course is required");
-      const { start, end } = cleanPeriod(row.startDate, row.endDate);
-
-      const user = await prisma.user.findUnique({ where: { phoneNumber: phone }, select: { id: true, role: true } });
-      const student = user && user.role === "STUDENT"
-        ? await prisma.student.findUnique({
-            where: { userId: user.id },
-            include: { enrollments: { include: enrollmentInclude } },
-          })
-        : null;
-      if (!student) throw new HttpError(404, "No student found with this phone number");
-      if (!canManage(me, student)) throw new HttpError(403, "This student belongs to another branch");
-
-      const items = [];
-      const missing = [];
-      for (const n of names) {
-        const course = byName.get(n.toLowerCase());
-        if (!course) missing.push(n);
-        else if (!items.some((x) => x.courseId === course.id)) items.push({ courseId: course.id, start, end });
-      }
-      if (items.length === 0) throw new HttpError(400, `Course not found in this branch: ${missing.join(", ")}`);
-      if (missing.length) {
-        warnings.push({ row: sheetRow, name: row.name, message: `Course not found in this branch: ${missing.join(", ")}` });
-      }
-
-      await addCoursesTo([student.id], items);
-      updated.push({ name: row.name, phoneNumber: phone });
-    } catch (err) {
-      errors.push({
-        row: sheetRow,
-        name: row.name,
-        phoneNumber: row.phoneNumber,
-        message: err.status ? err.message : "Could not save this row",
-      });
-    }
-  }
-  return { created: updated, errors, warnings };
-};
-
 // ---------- delete many students at once ----------
 // Same rules as deleting one: a super admin deletes them completely. A branch admin removes students
 // who also study in another branch only from their own branch, and deletes the others completely.
@@ -700,8 +627,6 @@ module.exports = {
   HttpError,
   deleteMany,
   listStudentIds,
-  assignCourses,
-  bulkAssignCourses,
   deleteStudent,
   getOptions,
   createStudent,
