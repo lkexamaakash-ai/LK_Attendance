@@ -375,4 +375,148 @@ const forStudent = async (userId, studentId, query) => {
   });
 };
 
-module.exports = { listLectures, getSheet, saveAttendance, batchSummary, mine, forStudent };
+// ---------- reports ----------
+// Which lectures can this person see? Faculty: their own. Branch admin: their branch. Super admin: all (or one branch).
+const lectureScope = (actor, query) => {
+  if (actor.role === "FACULTY") return { facultyId: actor.id };
+  if (actor.role === "BRANCH_ADMIN") return { batch: { course: { branchId: actor.branchId } } };
+  if (actor.role === "SUPER_ADMIN") {
+    return query.branchId ? { batch: { course: { branchId: Number(query.branchId) } } } : {};
+  }
+  throw new HttpError(403, "Access Denied");
+};
+
+const parseRange = (query) => {
+  const to = query.to ? toDate(query.to, "to") : todayIST();
+  const from = query.from ? toDate(query.from, "from") : new Date(to.getTime() - 29 * DAY);
+  if (from.getTime() > to.getTime()) throw new HttpError(400, "The from date cannot be after the to date");
+  if ((to.getTime() - from.getTime()) / DAY > 366) throw new HttpError(400, "Please choose a range of at most one year");
+  return { from, to };
+};
+
+const reportWhere = (actor, query) => {
+  const { from, to } = parseRange(query);
+  return {
+    range: { from, to },
+    where: {
+      date: { gte: from, lte: to },
+      lecture: lectureScope(actor, query),
+      ...(query.batchId && { batchId: Number(query.batchId) }),
+    },
+  };
+};
+
+const isoDay = (d) => new Date(d).toISOString().slice(0, 10);
+
+// Batches to choose from in the report filter
+const reportFilters = async (userId, query) => {
+  const actor = await getActor(userId);
+  const lectures = await prisma.lectureSchedule.findMany({
+    where: lectureScope(actor, query),
+    distinct: ["batchId"],
+    select: {
+      batch: { select: { id: true, name: true, course: { select: { name: true, branch: { select: { name: true } } } } } },
+    },
+  });
+  return lectures
+    .map((l) => ({
+      id: l.batch.id,
+      name: l.batch.name,
+      course: l.batch.course.name,
+      branch: l.batch.course.branch.name,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+};
+
+// One row per lecture and date: how many students were present and absent.
+const lectureReport = async (userId, query) => {
+  const actor = await getActor(userId);
+  const { range, where } = reportWhere(actor, query);
+
+  const grouped = await prisma.studentAttendance.groupBy({
+    by: ["lectureId", "date", "status"],
+    where,
+    _count: { _all: true },
+  });
+
+  const lectureIds = [...new Set(grouped.map((g) => g.lectureId))];
+  const lectures = lectureIds.length
+    ? await prisma.lectureSchedule.findMany({ where: { id: { in: lectureIds } }, include: lectureInclude })
+    : [];
+  const byId = new Map(lectures.map((l) => [l.id, l]));
+
+  const rows = new Map();
+  for (const g of grouped) {
+    const key = `${g.lectureId}|${isoDay(g.date)}`;
+    if (!rows.has(key)) {
+      const l = byId.get(g.lectureId);
+      rows.set(key, { lecture: shapeLecture(l), lectureId: g.lectureId, date: isoDay(g.date), present: 0, absent: 0 });
+    }
+    const r = rows.get(key);
+    if (g.status === "PRESENT") r.present += g._count._all;
+    else r.absent += g._count._all;
+  }
+
+  const list = [...rows.values()]
+    .map((r) => ({
+      lectureId: r.lectureId,
+      date: r.date,
+      startTime: r.lecture.startTime,
+      endTime: r.lecture.endTime,
+      subject: r.lecture.subject?.name,
+      faculty: r.lecture.faculty?.name,
+      batch: r.lecture.batch.name,
+      course: r.lecture.course.name,
+      branch: r.lecture.branch?.name,
+      present: r.present,
+      absent: r.absent,
+      total: r.present + r.absent,
+      percentage: percent(r.present, r.present + r.absent),
+    }))
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0) || new Date(a.startTime) - new Date(b.startTime));
+
+  const present = list.reduce((n, r) => n + r.present, 0);
+  const total = list.reduce((n, r) => n + r.total, 0);
+  return {
+    from: isoDay(range.from),
+    to: isoDay(range.to),
+    rows: list,
+    totals: { lectures: list.length, present, absent: total - present, total, percentage: percent(present, total) },
+  };
+};
+
+// One row per student: total present, absent and percentage in the chosen dates.
+const studentReport = async (userId, query) => {
+  const actor = await getActor(userId);
+  const { where } = reportWhere(actor, query);
+
+  const grouped = await prisma.studentAttendance.groupBy({
+    by: ["studentId", "status"],
+    where,
+    _count: { _all: true },
+  });
+  const ids = [...new Set(grouped.map((g) => g.studentId))];
+  const students = ids.length
+    ? await prisma.student.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, user: { select: { name: true, phoneNumber: true } } },
+      })
+    : [];
+  const info = new Map(students.map((s) => [s.id, s.user]));
+
+  const map = new Map();
+  for (const g of grouped) {
+    if (!map.has(g.studentId)) {
+      const u = info.get(g.studentId);
+      map.set(g.studentId, { id: g.studentId, name: u?.name || "-", phoneNumber: u?.phoneNumber || "", present: 0, absent: 0 });
+    }
+    const r = map.get(g.studentId);
+    if (g.status === "PRESENT") r.present += g._count._all;
+    else r.absent += g._count._all;
+  }
+  return [...map.values()]
+    .map((r) => ({ ...r, total: r.present + r.absent, percentage: percent(r.present, r.present + r.absent) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+};
+
+module.exports = { reportFilters, lectureReport, studentReport, listLectures, getSheet, saveAttendance, batchSummary, mine, forStudent };

@@ -4,6 +4,7 @@ import { ArrowLeft, Check, X } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import EmptyState from "../layout/EmptyState";
+import StudentAttendanceReport from "./StudentAttendanceReport";
 import { api, errorText, initialsOf } from "./shared";
 
 const todayISO = () => {
@@ -35,6 +36,7 @@ const StudentAttendanceMarker = ({ role, onBack }) => {
   const [sheetLoading, setSheetLoading] = useState(false);
   const [alreadyMarked, setAlreadyMarked] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState("mark"); // "mark" or "report"
 
   useEffect(() => {
     if (!isSuper) return;
@@ -189,6 +191,11 @@ const StudentAttendanceMarker = ({ role, onBack }) => {
     );
   }
 
+  // ---------- report ----------
+  if (tab === "report") {
+    return <StudentAttendanceReport role={role} onBack={onBack} onSwitch={() => setTab("mark")} />;
+  }
+
   // ---------- lecture list view ----------
   return (
     <div className="m-2 h-[91%] space-y-4 overflow-y-auto rounded-xl border border-stone-200 bg-white p-4 shadow-sm sm:p-6">
@@ -200,6 +207,13 @@ const StudentAttendanceMarker = ({ role, onBack }) => {
           <ArrowLeft className="size-4" /> Back to Attendance
         </button>
       )}
+
+      <div className="flex gap-2">
+        <span className="rounded-full border border-maroon-700 bg-maroon-50 px-4 py-1.5 text-sm font-medium text-maroon-800">Mark attendance</span>
+        <button onClick={() => setTab("report")} className="cursor-pointer rounded-full border border-stone-300 px-4 py-1.5 text-sm text-slate-700 hover:border-maroon-300">
+          Report
+        </button>
+      </div>
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-sm text-slate-600">
           Date
