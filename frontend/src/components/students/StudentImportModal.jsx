@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Download, FileSpreadsheet } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import { Field, ModalShell, api, errorText, getAuth, inputClass } from "./shared";
@@ -36,6 +36,24 @@ const toIso = (v) => {
 
 const norm = (h) => String(h).toLowerCase().replace(/\(.*?\)/g, "").replace(/[^a-z]/g, "");
 
+const splitCourseNames = (v) =>
+  String(v || "")
+    .split(/[,;\n]/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+
+// edit distance, to suggest the course that is spelled almost the same (for example Defence / Defense)
+const distance = (a, b) => {
+  const dp = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+  }
+  return dp[a.length][b.length];
+};
+
 const downloadTemplate = () => {
   const ws = XLSX.utils.aoa_to_sheet([
     HEADERS,
@@ -55,6 +73,50 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
   const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
+  const [options, setOptions] = useState([]); // branches with their courses
+  const [choice, setChoice] = useState({}); // sheet course name (lower case) -> course name, or "" for "do not add"
+
+  useEffect(() => {
+    api("get", "students/options")
+      .then(({ data }) => setOptions(data.data || []))
+      .catch(() => {});
+  }, []);
+
+  const branchCourses = useMemo(
+    () => options.find((b) => String(b.id) === String(branchId))?.courses || [],
+    [options, branchId],
+  );
+
+  // course names in the sheet that are not a course of the chosen branch
+  const unmatched = useMemo(() => {
+    if (!branchId || branchCourses.length === 0) return [];
+    const known = new Set(branchCourses.map((c) => c.name.trim().toLowerCase()));
+    const found = new Map();
+    for (const r of rows) {
+      for (const n of splitCourseNames(r.courseNames)) {
+        const key = n.toLowerCase();
+        if (known.has(key)) continue;
+        const cur = found.get(key) || { key, label: n, count: 0 };
+        cur.count += 1;
+        found.set(key, cur);
+      }
+    }
+    return [...found.values()];
+  }, [rows, branchId, branchCourses]);
+
+  // a course spelled almost the same is pre-selected, so you only have to confirm it
+  const suggested = useMemo(() => {
+    const out = {};
+    for (const u of unmatched) {
+      const best = branchCourses
+        .map((c) => ({ name: c.name, d: distance(u.key, c.name.trim().toLowerCase()) }))
+        .sort((a, b) => a.d - b.d)[0];
+      if (best && best.d <= 2) out[u.key] = best.name;
+    }
+    return out;
+  }, [unmatched, branchCourses]);
+
+  const picked = (key) => (choice[key] !== undefined ? choice[key] : suggested[key]);
 
   const onFile = async (e) => {
     const file = e.target.files?.[0];
@@ -94,6 +156,21 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
     }
   };
 
+  // replaces the course names of the sheet with the courses you matched them to
+  const withMatchedCourses = (r) => {
+    const names = splitCourseNames(r.courseNames);
+    if (!names.length) return r;
+    const known = new Set(branchCourses.map((c) => c.name.trim().toLowerCase()));
+    const out = [];
+    for (const n of names) {
+      const key = n.toLowerCase();
+      if (known.has(key)) out.push(n);
+      else if (picked(key)) out.push(picked(key));
+      else if (picked(key) === undefined) out.push(n); // not decided: the server reports it
+    }
+    return { ...r, courseNames: out.join(", ") };
+  };
+
   const run = async () => {
     if (!branchId) return toast.error("Please choose a branch");
     setBusy(true);
@@ -106,7 +183,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
       for (let i = 0; i < rows.length; i += CHUNK) {
         const { data } = await api("post", "students/bulk", {
           branchId: Number(branchId),
-          rows: rows.slice(i, i + CHUNK),
+          rows: rows.slice(i, i + CHUNK).map(withMatchedCourses),
         });
         created.push(...data.data.created);
         updated.push(...(data.data.updated || []));
@@ -135,7 +212,7 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-maroon-100 bg-maroon-50/60 p-4">
           <p className="text-sm text-slate-700">
-            Use our template. Only Name and Phone are required. Courses and dates are optional, and the course name must match exactly what is created for the branch. If a phone number is already added, the courses in that row are added to that student.
+            Use our template. Only Name and Phone are required. Courses and dates are optional, and if a course name in your file is not in the branch, you can match it to the right course before importing. If a phone number is already added, the courses in that row are added to that student.
           </p>
           <Button type="button" variant="outline" className="cursor-pointer" onClick={downloadTemplate}>
             <Download className="size-4" /> Download template
@@ -161,6 +238,47 @@ const StudentImportModal = ({ role, branches = [], onClose, onDone }) => {
           {rows.length > 0 && <span className="text-xs text-emerald-700">{rows.length} student row{rows.length === 1 ? "" : "s"} found</span>}
           <input type="file" accept=".xlsx,.xls" className="hidden" onChange={onFile} />
         </label>
+
+        {rows.length > 0 && !result && unmatched.length > 0 && (
+          <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+            <p className="text-sm font-semibold text-amber-800">
+              Some course names in your file are not in this branch. Choose the matching course for each.
+            </p>
+            {unmatched.map((u) => (
+              <div key={u.key} className="rounded-lg border border-amber-200 bg-white p-3">
+                <p className="text-sm text-slate-800">
+                  <b>{u.label}</b> <span className="text-xs text-slate-500">· {u.count} student{u.count === 1 ? "" : "s"}</span>
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {branchCourses.map((c) => {
+                    const on = picked(u.key) === c.name;
+                    return (
+                      <button
+                        type="button"
+                        key={c.id}
+                        onClick={() => setChoice((m) => ({ ...m, [u.key]: c.name }))}
+                        className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm transition ${
+                          on ? "border-maroon-700 bg-maroon-50 font-medium text-maroon-800" : "border-stone-300 text-slate-700 hover:border-maroon-300"
+                        }`}
+                      >
+                        {c.name}
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => setChoice((m) => ({ ...m, [u.key]: "" }))}
+                    className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm transition ${
+                      picked(u.key) === "" ? "border-slate-700 bg-slate-100 font-medium text-slate-800" : "border-stone-300 text-slate-500 hover:border-slate-400"
+                    }`}
+                  >
+                    Don&apos;t add a course
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {rows.length > 0 && !result && (
           <div className="overflow-x-auto rounded-lg border border-stone-200">
